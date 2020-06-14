@@ -1,0 +1,10 @@
+<component name="ArtifactManager">
+  <artifact type="jar" build-on-make="true" name="Peage">
+    <output-path>$PROJECT_DIR$/out/artifacts/Peage</output-path>
+    <root id="archive" name="Peage.jar">
+      <element id="module-output" name="peage" />
+      <element id="file-copy" path="$PROJECT_DIR$/plugin.yml" />
+      <element id="file-copy" path="$PROJECT_DIR$/Vault.jar" />
+    </root>
+  </artifact>
+</component>
