@@ -42,7 +42,7 @@ public class CommandPeage implements CommandExecutor {
                 return true;
             } else {
                 if (args[0].equalsIgnoreCase("network") && args.length > 1) {
-                    if (args[1].equalsIgnoreCase("edit")){
+                    if (args[1].equalsIgnoreCase("edit") && args.length >= 5){
                         if (args[2].equalsIgnoreCase("name")){
                             if (Network.existsName(args[3])){
                                 if(!Network.existsName(args[4])){
@@ -57,6 +57,7 @@ public class CommandPeage implements CommandExecutor {
                                 Chat.send(player, "&cLe réseau &r" + args[3] + "&c n'existe pas");
                             }
                         }
+                        return true;
                     }
 
                     if (args[1].equalsIgnoreCase("list")){
