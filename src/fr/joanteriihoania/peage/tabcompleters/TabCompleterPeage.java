@@ -41,6 +41,20 @@ public class TabCompleterPeage implements TabCompleter {
             listToReturn.add("set");
         }
 
+        if(args[0].equals("network") && args.length > 2){
+            if(args[1].equals("edit")) {
+                if (args.length == 3){
+                    listToReturn.add("name");
+                }
+
+                if (args.length == 4){
+                    for (Network network : networks) {
+                        listToReturn.add(network.getName());
+                    }
+                }
+            }
+        }
+
         if(args[0].equals("stand") && args.length > 2){
             if(args[1].equals("edit")) {
                 if (args.length == 3) {
