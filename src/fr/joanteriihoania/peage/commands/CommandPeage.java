@@ -50,6 +50,7 @@ public class CommandPeage implements CommandExecutor {
                                     assert network != null;
                                     Chat.send(player, "&aLe nom du réseau &r" + network.getName() + "&a a été défini à &r" + args[4]);
                                     network.setName(args[4]);
+                                    network.refresh();
                                 } else {
                                     Chat.send(player, "&cUn réseau porte déjà le nom &r" + args[4] + "&c.");
                                 }
