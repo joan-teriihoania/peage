@@ -88,8 +88,8 @@ public class Guichet implements Structure {
         double balance = mainInstance.economy.getBalance(player);
         if (balance - stand.getPrice() >= 0) {
             Signs.set(sign, new String[]{
-                    "&rPaiement accepté",
-                    "&rBonne route",
+                    "&aPaiement accepté",
+                    "&aBonne route",
                     ""
             });
 
