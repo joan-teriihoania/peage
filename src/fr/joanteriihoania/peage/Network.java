@@ -31,6 +31,12 @@ public class Network implements Structure {
         return false;
     }
 
+    public void refresh(){
+        for(Stand stand: content){
+            Guichet.refreshAll(stand);
+        }
+    }
+
     public static Network getNetworkFromName(String text){
         for (Network network: allNetworks){
             if (network.name.equals(text)){
