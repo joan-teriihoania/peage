@@ -93,7 +93,7 @@ public class Guichet implements Structure {
                     ""
             });
 
-            Chat.send(player, "Vous avez payé &a" + stand.getPrice() + "&r€ à la gare &a" + stand.getName() + "&r de &a" + network.getName() + "&r.");
+            Chat.send(player, "Vous avez payé &a" + stand.getPrice() + "&r€ au stand &a" + stand.getName() + "&r de &a" + network.getName() + "&r.");
             OfflinePlayer recipient = Bukkit.getOfflinePlayer(Bukkit.getPlayer("Nosange").getUniqueId());
             mainInstance.economy.withdrawPlayer(player, stand.getPrice());
             mainInstance.economy.depositPlayer(recipient, stand.getPrice());
