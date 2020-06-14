@@ -43,12 +43,12 @@ public class CommandPeage implements CommandExecutor {
             } else {
                 if (args[0].equalsIgnoreCase("network") && args.length > 1) {
                     if (args[1].equalsIgnoreCase("list")){
-                        Chat.send(player, "======================================");
+                        Chat.send(player, "");
+                        Chat.send(player, "");
                         Chat.send(player, "Liste des réseaux créés :");
                         for(Network listNetworks: networks){
                             Chat.send(player, "&a - " + listNetworks.getName() + " &r avec " + listNetworks.getContent().size() + " stand(s)");
                         }
-                        Chat.send(player, "======================================");
                         return true;
                     }
 
@@ -106,12 +106,12 @@ public class CommandPeage implements CommandExecutor {
                         Network selNetwork = Network.getNetworkFromName(args[2]);
 
                         if(networkExists){
-                            Chat.send(player, "======================================");
+                            Chat.send(player, "");
+                            Chat.send(player, "");
                             Chat.send(player, "Liste des stands du réseau &a" + selNetwork.getName() + "&r :");
                             for(Stand listStand: selNetwork.getContent()){
                                 Chat.send(player, "&a - " + listStand.getName() + " avec " + listStand.getContent().size() + " guichet(s)");
                             }
-                            Chat.send(player, "======================================");
                         } else {
                             Chat.send(player, "&cLe réseau &r" + args[2] + "&c n'existe pas.");
                         }
