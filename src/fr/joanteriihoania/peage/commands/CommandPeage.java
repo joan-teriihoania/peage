@@ -42,6 +42,23 @@ public class CommandPeage implements CommandExecutor {
                 return true;
             } else {
                 if (args[0].equalsIgnoreCase("network") && args.length > 1) {
+                    if (args[1].equalsIgnoreCase("edit")){
+                        if (args[2].equalsIgnoreCase("name")){
+                            if (Network.existsName(args[3])){
+                                if(!Network.existsName(args[4])){
+                                    Network network = Network.getNetworkFromName(args[3]);
+                                    assert network != null;
+                                    Chat.send(player, "&aLe nom du réseau &r" + network.getName() + "&a a été défini à &r" + args[4]);
+                                    network.setName(args[4]);
+                                } else {
+                                    Chat.send(player, "&cUn réseau porte déjà le nom &r" + args[4] + "&c.");
+                                }
+                            } else {
+                                Chat.send(player, "&cLe réseau &r" + args[3] + "&c n'existe pas");
+                            }
+                        }
+                    }
+
                     if (args[1].equalsIgnoreCase("list")){
                         Chat.send(player, "");
                         Chat.send(player, "");
@@ -57,10 +74,10 @@ public class CommandPeage implements CommandExecutor {
                             Network network = new Network();
                             network.setName(args[2]);
                             networks.add(network);
-                            Chat.send(player, "&aNetwork &r'" + network.getName() + " (" + network.getUniqueId() + ")'&a créé.");
+                            Chat.send(player, "&aRéseau &r'" + network.getName() + " (" + network.getUniqueId() + ")'&a créé.");
                             return true;
                         } else {
-                            Chat.send(player, "&cUn network porte déjà le nom &r" + args[2] + "&c.");
+                            Chat.send(player, "&cUn réseau porte déjà le nom &r" + args[2] + "&c.");
                             return true;
                         }
                     }
@@ -72,6 +89,7 @@ public class CommandPeage implements CommandExecutor {
                         Network selNetwork = Network.getNetworkFromName(args[2]);
 
                         if (networkExists){
+                            assert selNetwork != null;
                             if (selNetwork.standNameExists(args[3])){
                                 Stand selStand = selNetwork.getStandFromName(args[3]);
                                 if (args[4].equalsIgnoreCase("name")){
@@ -86,7 +104,7 @@ public class CommandPeage implements CommandExecutor {
                                 }
 
                                 if (args[4].equalsIgnoreCase("price")){
-                                    Double newPrice = Double.parseDouble(args[5]);
+                                    double newPrice = Double.parseDouble(args[5]);
                                     selStand.setPrice(newPrice);
                                     Chat.send(player, "&aLe prix du stand &r" + selStand.getName() + "&a de &r" + selNetwork.getName() + "&a a été défini à &r" + newPrice);
                                     Guichet.refreshAll(selStand);
