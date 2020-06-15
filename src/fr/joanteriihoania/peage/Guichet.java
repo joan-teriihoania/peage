@@ -1,17 +1,26 @@
 package fr.joanteriihoania.peage;
 
-import org.bukkit.Bukkit;
-import org.bukkit.Location;
-import org.bukkit.OfflinePlayer;
+import net.md_5.bungee.api.chat.ClickEvent;
+import net.md_5.bungee.api.chat.ComponentBuilder;
+import net.md_5.bungee.api.chat.HoverEvent;
+import net.md_5.bungee.api.chat.TextComponent;
+import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.BlockState;
 import org.bukkit.block.Sign;
+import org.bukkit.block.data.BlockData;
+import org.bukkit.block.data.Directional;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
+import org.bukkit.event.inventory.InventoryEvent;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.util.Vector;
 
-import java.util.ArrayList;
-import java.util.UUID;
+import javax.imageio.plugins.jpeg.JPEGImageReadParam;
+import java.net.Inet4Address;
+import java.util.*;
 
 public class Guichet implements Structure {
 
@@ -23,12 +32,29 @@ public class Guichet implements Structure {
     private Sign sign;
     private Stand stand;
     private Network network;
+    private Block entranceCenter;
+    private Block exitCenter;
+    private Block fence1;
+    private Block fence2;
+    private Block fence3;
+    private boolean locked = false;
+    private ArrayList<Entity> enteredPlayer = new ArrayList<>();
+    private ArrayList<Entity> exitedPlayer = new ArrayList<>();
+
+    public Block getEntranceCenter() {
+        return entranceCenter;
+    }
+
+    public Block getExitCenter() {
+        return exitCenter;
+    }
 
     public Guichet(String name, Sign sign) {
         id = autoinc;
         autoinc++;
         this.name = name;
         this.sign = sign;
+        updateZones();
         allGuichets.add(this);
     }
 
@@ -60,7 +86,7 @@ public class Guichet implements Structure {
         Sign sign = (Sign) getSign();
         if (sign != null) {
             Signs.set(sign, new String[]{
-                    "&cPlugin disabled",
+                    "&cSystem disabled",
                     "&fDO NOT BREAK",
                     "&fTHIS SIGN"
             });
@@ -74,48 +100,305 @@ public class Guichet implements Structure {
     }
 
     public void refresh(){
-        Sign sign = (Sign) getSign();
+        updateZones();
+
         if (sign != null) {
+            String price = "&9&l[&r&bPrix: &r" + stand.getPrice() + "&b€&r&9&l]";
+            if(stand.getPrice() == 0) price = "&aGratuit";
+
             Signs.set(sign, new String[]{
                     "&a" + network.getName(),
                     "&f" + stand.getName(),
-                    "&9&l[&r&bPrix: &r" + stand.getPrice() + "&b€&r&9&l]"
+                    price
             });
         }
     }
 
-    public void clicked(Player player){
-        double balance = mainInstance.economy.getBalance(player);
-        if (balance - stand.getPrice() >= 0) {
-            Signs.set(sign, new String[]{
-                    "&aPaiement accepté",
-                    "&aBonne route",
-                    ""
-            });
 
-            Chat.send(player, "Vous avez payé &a" + stand.getPrice() + "&r€ au stand &a" + stand.getName() + "&r de &a" + network.getName() + "&r.");
-            OfflinePlayer recipient = Bukkit.getOfflinePlayer(Bukkit.getPlayer("Nosange").getUniqueId());
-            mainInstance.economy.withdrawPlayer(player, stand.getPrice());
-            mainInstance.economy.depositPlayer(recipient, stand.getPrice());
+    public void onTick(HashMap<Guichet, Integer> guichetsTriggered){
+        if (entranceCenter != null) {
+            Location location = entranceCenter.getLocation();
+            World world = location.getWorld();
+            assert world != null;
+            List<Entity> nearbyEntites = (List<Entity>) world.getNearbyEntities(location, 2, 2, 2);
+            for (Entity entity : nearbyEntites) {
+                if (entity instanceof Player) {
+                    Player player = (Player) entity;
+                    ItemMeta itemMeta = player.getInventory().getItemInMainHand().getItemMeta();
+                    if (itemMeta != null) {
+                        BadgeParser badgeParser = new BadgeParser().fromTag(itemMeta.getLocalizedName());
+                        if (badgeParser.canOpen(this) && !mainInstance.isGuichetTriggered(this) && !locked) {
+                            badgeParser.useBadge(player, this);
+                            Chat.send(player, network.getName() + " vous souhaite bonne route !");
+                            mainInstance.addGuichetTriggered(this);
+                            open();
+                            return;
+                        }
+                    }
+
+                    if (!enteredPlayer.contains(entity)) {
+                        PlayerEnterEvent((Player) entity);
+                        enteredPlayer.add(entity);
+                    }
+                }
+            }
+
+            ArrayList<Entity> noLongerEnteredPlayer = new ArrayList<>();
+            for (Entity entity: enteredPlayer){
+                if (!nearbyEntites.contains(entity)){
+                    noLongerEnteredPlayer.add(entity);
+                }
+            }
+
+            for (Entity entity: noLongerEnteredPlayer){
+                enteredPlayer.remove(entity);
+            }
+        }
+
+        Block exitCenter = getExitCenter();
+        if (exitCenter != null) {
+            Location location = exitCenter.getLocation();
+            World world = location.getWorld();
+            assert world != null;
+            List<Entity> nearbyEntites = (List<Entity>) world.getNearbyEntities(location, 2, 2, 2);
+            boolean playerIsInside = false;
+            for (Entity entity : nearbyEntites) {
+                if(entity instanceof Player) {
+                    playerIsInside = true;
+                    guichetsTriggered.remove(this);
+                    PlayerExitEvent((Player) entity);
+                }
+            }
+
+            if (playerIsInside){
+                lock();
+            } else {
+                unlock();
+            }
+        }
+
+        if(stand.getPrice() == 0){
+            open();
+        }
+    }
+
+    public static void onEdit(Stand stand){
+        for (Guichet guichet: allGuichets) {
+            if (stand.getUniqueId().equals(guichet.stand.getUniqueId())) {
+                guichet.onEdit();
+            }
+        }
+    }
+
+    public void onEdit(){
+        if (stand.getPrice() == 0){
             open();
         } else {
-            Signs.set(sign, new String[]{
-                    "",
-                    "&cTransaction",
-                    "&crefusée"
-            });
+            close();
+        }
+
+        refresh();
+    }
+
+    public boolean clicked(Player player){
+        return clicked(player, stand.getPrice());
+    }
+
+    public boolean clicked(Player player, double price){
+        if (price == 0) return false;
+        if(locked) return false;
+        double balance = mainInstance.economy.getBalance(player);
+        if (balance - price >= 0) {
+            OfflinePlayer owner = network.getOwner();
+            if (owner != null) {
+                OfflinePlayer recipient = Bukkit.getOfflinePlayer(owner.getUniqueId());
+                mainInstance.economy.withdrawPlayer(player, price);
+                mainInstance.economy.depositPlayer(recipient, price);
+
+                if (!player.getName().equals(owner.getName())) {
+                    Chat.send(player, "Vous avez payé &a" + price + "&r€ à &a" + stand.getName() + "&r de &a" + network.getName() + "&r.");
+                    Chat.send(player, network.getName() + " vous souhaite bonne route !");
+
+                    if (owner.isOnline()) {
+                        Player onlineOwner = owner.getPlayer();
+                        Chat.send(onlineOwner, player.getDisplayName() + " a payé &a" + price + "&r€ à &a" + stand.getName() + "&r de &a" + network.getName() + "&r.");
+                    }
+                } else {
+                    Chat.send(player, "Vous vous êtes payé &a" + price + "&r€ &a" + stand.getName() + "&r de &a" + network.getName() + "&r.");
+                }
+
+                open();
+            } else {
+                Chat.send(player, "&cTransaction refusée: &fRéseau sans propriétaire&c.");
+                return false;
+            }
+        } else {
             Chat.send(player, "&cTransaction refusée: &fSolde insuffisant&c.");
-            mainInstance.getServer().getScheduler().runTaskLater(mainInstance, () -> refresh(), (long) 20);
+            return false;
+        }
+
+        return true;
+    }
+
+    public static void openAll(){
+        for(Guichet guichet: allGuichets){
+            if (guichet.locked) return;
+            guichet.open();
         }
     }
 
+    public static void closeAll(){
+        for(Guichet guichet: allGuichets){
+            guichet.close();
+        }
+    }
 
     public void open(){
-        System.out.println(sign.getBlock().getFace(sign.getBlock()));
+        if (sign == null) return;
+        if(locked) return;
+        updateZones();
+        fence1.setType(Material.AIR);
+        fence2.setType(Material.AIR);
+        fence3.setType(Material.AIR);
     }
 
     public void close(){
+        if (sign == null) return;
+        if(locked) return;
+        updateZones();
+        fence1.setType(Material.WHITE_WOOL);
+        fence2.setType(Material.RED_WOOL);
+        fence3.setType(Material.WHITE_WOOL);
+    }
 
+    public void delete(){
+        allGuichets.remove(this);
+        unlock();
+        open();
+        Signs.set(sign, new String[]{
+                "",
+                "&cPéage supprimé",
+                ""
+        });
+    }
+
+    public void PlayerEnterEvent(Player player){
+        if (!mainInstance.isGuichetTriggered(this) && !locked) {
+            ItemMeta itemMeta = player.getInventory().getItemInMainHand().getItemMeta();
+            if(itemMeta != null){
+                BadgeParser badgeParser = new BadgeParser().fromTag(itemMeta.getLocalizedName());
+                if (badgeParser.canOpen(this)) {
+                    badgeParser.useBadge(player, this);
+                    Chat.send(player, network.getName() + " vous souhaite bonne route !");
+                    mainInstance.addGuichetTriggered(this);
+                    open();
+                    return;
+                }
+            }
+
+            if (stand.getPrice() > 0) {
+                TextComponent message = new TextComponent(ChatColor.translateAlternateColorCodes('&', "&9&l[&r&bPéage&r&9&l]&r &9&l<&bCliquer pour payer &f" + stand.getPrice() + "&b€ et ouvrir le péage&9&l>"));
+                message.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/peage pay " + getUniqueId()));
+                message.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new ComponentBuilder("En cliquant ici, vous acceptez que le réseau " + network.getName() + " prélève la somme de " + stand.getPrice() + "€ de votre compte bancaire dans les limites acceptées par votre solde. Un solde insuffisant invalidera cette transaction.").create()));
+                Chat.send(player, "&bVous arrivez au guichet &f" + getUniqueId() + "&b de &f" + stand.getName() + "&b de &f" + network.getName());
+                player.spigot().sendMessage(message);
+            }
+        }
+    }
+
+    public void PlayerExitEvent(Player player){
+        if (stand.getPrice() > 0){
+            close();
+        }
+    }
+
+    public void lock(){
+        locked = true;
+        close();
+        if(sign == null) return;
+        Signs.set(sign, new String[]{
+                "",
+                "&bPatientez svp",
+                ""
+        });
+    }
+
+    public void unlock(){
+        locked = false;
+        refresh();
+    }
+
+    public boolean isInEntrance(Player player){
+        Location playerLoc = player.getLocation();
+        if (playerLoc.distance(entranceCenter.getLocation()) <= 1){
+            return true;
+        }
+        return false;
+    }
+
+    public boolean isInExit(Player player){
+        Location playerLoc = player.getLocation();
+        if (playerLoc.distance(exitCenter.getLocation()) <= 1){
+            return true;
+        }
+        return false;
+    }
+
+    public void updateZones(){
+        if (sign == null) return;
+        Block block = sign.getBlock();
+        BlockData data = block.getBlockData();
+        if (data instanceof Directional) {
+            Directional directional = (Directional)data;
+            BlockFace facing = directional.getFacing();
+            BlockFace leftFacing = null;
+            entranceCenter = block.getRelative(directional.getFacing());
+
+            if (facing == BlockFace.EAST){
+                leftFacing = BlockFace.NORTH;
+            }
+            if (facing == BlockFace.NORTH){
+                leftFacing = BlockFace.WEST;
+            }
+            if (facing == BlockFace.WEST){
+                leftFacing = BlockFace.SOUTH;
+            }
+            if (facing == BlockFace.SOUTH){
+                leftFacing = BlockFace.EAST;
+            }
+
+            if (leftFacing != null) {
+                exitCenter = entranceCenter.getRelative(leftFacing);
+                exitCenter = exitCenter.getRelative(leftFacing);
+                exitCenter = exitCenter.getRelative(leftFacing);
+                exitCenter = exitCenter.getRelative(leftFacing);
+                exitCenter = exitCenter.getRelative(leftFacing);
+                exitCenter = exitCenter.getRelative(leftFacing);
+
+                fence2 = entranceCenter.getRelative(leftFacing);
+                fence2 = fence2.getRelative(leftFacing);
+                fence1 = fence2.getRelative(directional.getFacing());
+                fence3 = fence2.getRelative(directional.getFacing().getOppositeFace());
+            }
+        }
+    }
+
+    public static boolean existsId(String text){
+        for(Guichet guichet: allGuichets){
+            if (guichet.getUniqueId().equals(text)){
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public static Guichet getGuichetFromId(String text){
+        for(Guichet guichet: allGuichets){
+            if (guichet.getUniqueId().equals(text)){
+                return guichet;
+            }
+        }
+        return null;
     }
 
     public static void refreshAll(){
@@ -126,7 +409,7 @@ public class Guichet implements Structure {
 
     public static void refreshAll(Stand stand){
         for(Guichet element: allGuichets) {
-            if (element.stand.getName() == stand.getName()){
+            if (element.stand.getName().equals(stand.getName())){
                 element.refresh();
             }
         }
@@ -155,6 +438,8 @@ public class Guichet implements Structure {
 
     public void setSign(Sign sign) {
         this.sign = sign;
+        updateZones();
+        close();
     }
 
     public BlockState getSign() {
@@ -192,18 +477,17 @@ public class Guichet implements Structure {
     }
 
     public String save(){
-        int x = 0;
-        int y = 0;
-        int z = 0;
-        String world = "";
-
         if (sign != null){
+            String world = "";
             world = sign.getWorld().getName();
-            x = sign.getLocation().getBlockX();
-            y = sign.getLocation().getBlockY();
-            z = sign.getLocation().getBlockZ();
+            int x = sign.getLocation().getBlockX();
+            int y = sign.getLocation().getBlockY();
+            int z = sign.getLocation().getBlockZ();
+            return getUniqueId() + ":" + getName() + ":" + world + ":" + x + ":" + y + ":" + z;
+        } else {
+            Console.output("WARN: Saving string build failed (no sign defined)");
+            return "";
         }
 
-        return getUniqueId() + ":" + getName() + ":" + world + ":" + x + ":" + y + ":" + z;
     }
 }

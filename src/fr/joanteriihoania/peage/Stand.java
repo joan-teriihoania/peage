@@ -1,5 +1,7 @@
 package fr.joanteriihoania.peage;
 
+import org.bukkit.block.Sign;
+
 import java.util.ArrayList;
 
 public class Stand implements Structure {
@@ -24,6 +26,24 @@ public class Stand implements Structure {
         return allStands;
     }
 
+    public static Stand getStandFromName(String text){
+        for (Stand stand: allStands){
+            if (stand.name.equals(text)){
+                return stand;
+            }
+        }
+        return null;
+    }
+
+    public static Stand getStandFromId(String text){
+        for (Stand stand: allStands){
+            if (stand.getUniqueId().equals(text)){
+                return stand;
+            }
+        }
+        return null;
+    }
+
     public static boolean existsName(String text){
         for (Stand stand: allStands){
             if (stand.name.equals(text)){
@@ -43,6 +63,13 @@ public class Stand implements Structure {
 
     public Stand(){
         this(autoinc + "", new ArrayList<>(), 0);
+    }
+
+    public void delete(){;
+        allStands.remove(this);
+        for(Guichet guichet: content){
+            guichet.delete();
+        }
     }
 
     @Override

@@ -9,12 +9,11 @@ website: http://joan-teriihoania.fr/
 commands:
   peage:
     description: Informations sur le plugin Peage
-    permission: peage.use
     usage: /<peage> [network|stand] [list|create|remove|edit|set] [...]
 
 permissions:
-  peage.use:
-    description: Autorise l'utilisation de la commande peage
+  peage.admin:
+    description: Autorise les commandes admin
     default: op
 
 depend: [Vault]

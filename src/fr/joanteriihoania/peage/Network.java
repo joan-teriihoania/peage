@@ -1,5 +1,10 @@
 package fr.joanteriihoania.peage;
 
+import org.bukkit.OfflinePlayer;
+import org.bukkit.entity.Player;
+import sun.nio.ch.Net;
+
+import java.sql.Array;
 import java.util.ArrayList;
 
 public class Network implements Structure {
@@ -9,17 +14,27 @@ public class Network implements Structure {
     private int id;
     private String name;
     private ArrayList<Stand> content;
+    private OfflinePlayer owner;
 
-    public Network(String name, ArrayList<Stand> content) {
+    public Network(String name, ArrayList<Stand> content, OfflinePlayer owner) {
         id = autoinc;
         autoinc++;
         this.name = name;
         this.content = content;
+        this.owner = owner;
         allNetworks.add(this);
     }
 
-    public Network(ArrayList<Stand> content){
-        this(autoinc + "", content);
+    public Network(ArrayList<Stand> content, Player owner){
+        this(autoinc + "", content, owner);
+    }
+
+    public OfflinePlayer getOwner() {
+        return owner;
+    }
+
+    public void setOwner(OfflinePlayer owner) {
+        this.owner = owner;
     }
 
     public static boolean existsName(String text){
@@ -46,8 +61,38 @@ public class Network implements Structure {
         return null;
     }
 
+    public static Network getNetworkFromId(String text){
+        for (Network network: allNetworks){
+            if (network.getUniqueId().equals(text)){
+                return network;
+            }
+        }
+        return null;
+    }
+
+    public static ArrayList<Network> getOwnedBy(Player player){
+        ArrayList<Network> toreturn = new ArrayList<>();
+        for (Network network: allNetworks){
+            if (network.isOwner(player)){
+                toreturn.add(network);
+            }
+        }
+        return toreturn;
+    }
+
+    public static ArrayList<Network> getAllNetworks() {
+        return allNetworks;
+    }
+
+    public boolean isOwner(Player player){
+        if(player.hasPermission("peage.admin")) return true;
+        if (owner == null) return false;
+        if(player.getName().equals(owner.getName())) return true;
+        return false;
+    }
+
     public Network(){
-        this(autoinc + "", new ArrayList<>());
+        this(autoinc + "", new ArrayList<>(), null);
     }
 
     public boolean standNameExists(String text){
@@ -102,6 +147,15 @@ public class Network implements Structure {
             }
         }
         return null;
+    }
+
+    public void delete(){
+        allNetworks.remove(this);
+        for(Stand stand: content){
+            Console.output("Deleting " + stand.getName());
+            stand.delete();
+            Console.output("Deleted " + stand.getName());
+        }
     }
 
     public ArrayList<Stand> getContent() {
