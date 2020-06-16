@@ -24,14 +24,18 @@ sur un circuit autoroutier français ouvert.
 
 You can install the plugin by downloading the latest jar version
 which is in the depot. You can also download the deposit.
+
 ---
+
 Vous pouvez installer le plugin en téléchargeant la dernière version jar
 qui se trouve dans le dépôt. Vous pouvez également télécharger le dépôt.
 
 ### Prérequis
 This plugin was developed in a Java 8 environment for Spigot in
 api-version `1.15`. You must have an economy plugin on your server as well as Vault.
+
 ---
+
 Ce plugin a été développé sous un environnement Java 8 pour Spigot en 
 api-version `1.15`. Vous devez avoir un plugin d'économie sur votre serveur ainsi que Vault.
 
