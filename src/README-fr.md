@@ -99,6 +99,9 @@ la commande :
 Pour supprimer une zone : `/peage area delete [Nom du réseau] [Nom de la zone]`.
 **Supprime également les guichets à l'intérieur.**
 
+> **Note :** Une zone ne peut (et ne doit) pas être nommée "all". Il s'agit d'une
+>zone réservée au système.
+
 
 ### Guichet
 Pour créer un guichet, vous devez avoir le regard pointé sur une pancarte (à
@@ -110,13 +113,39 @@ détruire le guichet, détruisez le panneau sur lequel il a été affecté.
 
 Un guichet est composé de quatre parties :
  - Le panneau
- - La zone d'entrée
- - La zone de sortie
- - La barrière
+ - La zone d'entrée (3x3x3)
+ - La zone de sortie (3x3x3)
+ - La barrière (3x1x1)
 
 Le panneau est la pancarte sur laquelle le guichet est affecté. A partir de
-cette pancarte, la zone d'entrée, de sortie et la barrière sont placées.
+cette pancarte, la zone d'entrée, de sortie et la barrière sont placées
+suivant la **direction pointée par la pancarte**.
 
-## Utilisation
+**Le centre de la zone d'entrée** est placé sur le bloc devant le panneau.
+Elle sert à détecter les arrivants et recherche la présence d'un badge.
 
-### Les commandes
+**La barrière** est placée deux blocs à gauche du centre de l'entrée.
+
+**Le centre de la zone de sortie** est placé trois blocs à gauche de la barrière.
+ELle sert à refermer la barrière et le guichet au passage d'un joueur.
+
+**Il est déconseillé de placer les guichets trop proches de façon à ce que
+les zones se surmontent.**
+
+### Badges
+Vous pouvez créer des badges que les gens peuvent placer dans leur main
+pour passer au niveau des péages. Ces badges peuvent être :
+ - Passage gratuit (freepass),
+ - Passage aux prix réduit de `x`% (reducpass).
+
+Chaque badge peut avoir un nombre d'utilisation limité ou non.
+Voici la liste des commandes pour les créer (seuls les propriétaires
+et admin peuvent créer un badge pour un réseau).
+
+> **Note :** Vous pouvez mettre "all" en nom de zone. Cela permet à un badge
+>de pouvoir déverouiller toutes les zones du réseau.
+
+ - `/peage badge [Nom du réseau] [Nom de la zone] freepass unlimited`
+ - `/peage badge [Nom du réseau] [Nom de la zone] freepass limited [Nombre d'utilisation]`
+ - `/peage badge [Nom du réseau] [Nom de la zone] reducpass unlimited [Réduction en %]`
+ - `/peage badge [Nom du réseau] [Nom de la zone] reducpass limited [Réduction en %] [Nombre d'utilisation]`
