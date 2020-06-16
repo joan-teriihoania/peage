@@ -14,6 +14,7 @@ public class Stand implements Structure {
     private double price;
 
     public Stand(String name, ArrayList<Guichet> content, double price) {
+        while (existsId(autoinc)) autoinc++;
         id = autoinc;
         autoinc++;
         this.price = price;
@@ -47,6 +48,15 @@ public class Stand implements Structure {
     public static boolean existsName(String text){
         for (Stand stand: allStands){
             if (stand.name.equals(text)){
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public static boolean existsId(int id){
+        for (Stand stand: allStands){
+            if (stand.id == id){
                 return true;
             }
         }

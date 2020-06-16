@@ -17,6 +17,7 @@ public class Network implements Structure {
     private OfflinePlayer owner;
 
     public Network(String name, ArrayList<Stand> content, OfflinePlayer owner) {
+        while (existsId(autoinc)) autoinc++;
         id = autoinc;
         autoinc++;
         this.name = name;
@@ -40,6 +41,15 @@ public class Network implements Structure {
     public static boolean existsName(String text){
         for (Network network: allNetworks){
             if (network.name.equals(text)){
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public static boolean existsId(int id){
+        for (Network network: allNetworks){
+            if (network.id == id){
                 return true;
             }
         }

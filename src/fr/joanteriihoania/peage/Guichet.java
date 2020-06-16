@@ -51,12 +51,24 @@ public class Guichet implements Structure {
     }
 
     public Guichet(String name, Sign sign) {
+        while(existsId(autoinc)) autoinc++;
         id = autoinc;
         autoinc++;
         this.name = name;
         this.sign = sign;
         updateZones();
         allGuichets.add(this);
+    }
+
+
+
+    public static boolean existsId(int id){
+        for (Guichet guichet: allGuichets){
+            if (guichet.id == id){
+                return true;
+            }
+        }
+        return false;
     }
 
     public ArrayList<Block> getProtectedBlocks(){
