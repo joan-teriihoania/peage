@@ -5,7 +5,11 @@ import org.bukkit.block.Sign;
 
 public class Signs {
 
-    private static final String prefix = "&9&l[&r&bPéage&r&9&l]&r";
+    private static String prefix;
+
+    public static void setPrefix(String prefix) {
+        Signs.prefix = prefix;
+    }
 
     public static void set(Sign sign, int index, String text){
         sign.setLine(0, ChatColor.translateAlternateColorCodes('&', prefix + " &r"));

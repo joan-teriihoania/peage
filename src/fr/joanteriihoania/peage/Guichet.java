@@ -37,6 +37,7 @@ public class Guichet implements Structure {
     private Block fence1;
     private Block fence2;
     private Block fence3;
+    private Block blockBehind;
     private boolean locked = false;
     private ArrayList<Entity> enteredPlayer = new ArrayList<>();
     private ArrayList<Entity> exitedPlayer = new ArrayList<>();
@@ -56,6 +57,15 @@ public class Guichet implements Structure {
         this.sign = sign;
         updateZones();
         allGuichets.add(this);
+    }
+
+    public ArrayList<Block> getProtectedBlocks(){
+        ArrayList<Block> blocks = new ArrayList<>();
+        blocks.add(fence1);
+        blocks.add(fence2);
+        blocks.add(fence3);
+        blocks.add(blockBehind);
+        return blocks;
     }
 
     public Guichet(){
@@ -127,8 +137,7 @@ public class Guichet implements Structure {
                     ItemMeta itemMeta = player.getInventory().getItemInMainHand().getItemMeta();
                     if (itemMeta != null) {
                         BadgeParser badgeParser = new BadgeParser().fromTag(itemMeta.getLocalizedName());
-                        if (badgeParser.canOpen(this) && !mainInstance.isGuichetTriggered(this) && !locked) {
-                            badgeParser.useBadge(player, this);
+                        if (badgeParser.canOpen(this) && !mainInstance.isGuichetTriggered(this) && !locked && badgeParser.useBadge(player, this)) {
                             Chat.send(player, network.getName() + " vous souhaite bonne route !");
                             mainInstance.addGuichetTriggered(this);
                             open();
@@ -266,12 +275,13 @@ public class Guichet implements Structure {
         if (sign == null) return;
         if(locked) return;
         updateZones();
-        fence1.setType(Material.WHITE_WOOL);
-        fence2.setType(Material.RED_WOOL);
-        fence3.setType(Material.WHITE_WOOL);
+        fence1.setType(Material.WHITE_CONCRETE);
+        fence2.setType(Material.RED_CONCRETE);
+        fence3.setType(Material.WHITE_CONCRETE);
     }
 
     public void delete(){
+        mainInstance.removeGuichetTriggered(this);
         allGuichets.remove(this);
         unlock();
         open();
@@ -287,8 +297,7 @@ public class Guichet implements Structure {
             ItemMeta itemMeta = player.getInventory().getItemInMainHand().getItemMeta();
             if(itemMeta != null){
                 BadgeParser badgeParser = new BadgeParser().fromTag(itemMeta.getLocalizedName());
-                if (badgeParser.canOpen(this)) {
-                    badgeParser.useBadge(player, this);
+                if (badgeParser.canOpen(this) && badgeParser.useBadge(player, this)) {
                     Chat.send(player, network.getName() + " vous souhaite bonne route !");
                     mainInstance.addGuichetTriggered(this);
                     open();
@@ -296,7 +305,7 @@ public class Guichet implements Structure {
                 }
             }
 
-            if (stand.getPrice() > 0) {
+            if (stand.getPrice() > 0 && mainInstance.getConfig().getBoolean("displayMessageWhenArriveAtGuichet")) {
                 TextComponent message = new TextComponent(ChatColor.translateAlternateColorCodes('&', "&9&l[&r&bPéage&r&9&l]&r &9&l<&bCliquer pour payer &f" + stand.getPrice() + "&b€ et ouvrir le péage&9&l>"));
                 message.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/peage pay " + getUniqueId()));
                 message.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new ComponentBuilder("En cliquant ici, vous acceptez que le réseau " + network.getName() + " prélève la somme de " + stand.getPrice() + "€ de votre compte bancaire dans les limites acceptées par votre solde. Un solde insuffisant invalidera cette transaction.").create()));
@@ -352,6 +361,7 @@ public class Guichet implements Structure {
             Directional directional = (Directional)data;
             BlockFace facing = directional.getFacing();
             BlockFace leftFacing = null;
+            blockBehind = block.getRelative(directional.getFacing().getOppositeFace());
             entranceCenter = block.getRelative(directional.getFacing());
 
             if (facing == BlockFace.EAST){

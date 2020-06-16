@@ -71,33 +71,6 @@ public class CommandPeage implements CommandExecutor {
                 return true;
             } else {
                 if (player.hasPermission("peage.admin")) {
-                    if (args[0].equalsIgnoreCase("badge")) {
-                        ItemStack badge = new ItemStack(Material.PAPER, 1);
-                        ItemMeta itemMeta = badge.getItemMeta();
-                        if(itemMeta != null) {
-                            itemMeta.setLocalizedName("0-peage-2-2-freepass-limited-3-" + System.currentTimeMillis());
-                            badge.setItemMeta(itemMeta);
-                            new BadgeParser().fromTag(itemMeta.getLocalizedName()).updateLore(player, badge);
-                            player.getInventory().addItem(badge);
-
-                            itemMeta.setLocalizedName("0-peage-2-2-freepass-unlimited-" + System.currentTimeMillis());
-                            badge.setItemMeta(itemMeta);
-                            new BadgeParser().fromTag(itemMeta.getLocalizedName()).updateLore(player, badge);
-                            player.getInventory().addItem(badge);
-
-                            itemMeta.setLocalizedName("0-peage-2-2-reducpass-limited-0.1-3-" + System.currentTimeMillis());
-                            badge.setItemMeta(itemMeta);
-                            new BadgeParser().fromTag(itemMeta.getLocalizedName()).updateLore(player, badge);
-                            player.getInventory().addItem(badge);
-
-                            itemMeta.setLocalizedName("0-peage-2-2-reducpass-unlimited-0.1-" + System.currentTimeMillis());
-                            badge.setItemMeta(itemMeta);
-                            new BadgeParser().fromTag(itemMeta.getLocalizedName()).updateLore(player, badge);
-                            player.getInventory().addItem(badge);
-                        }
-                        return true;
-                    }
-
                     if (args[0].equalsIgnoreCase("save")) {
                         saveData(player);
                         return true;
@@ -115,10 +88,89 @@ public class CommandPeage implements CommandExecutor {
                         return true;
                     }
                 }
-                if (args[0].equalsIgnoreCase("buy")) {
-                    InterfaceBuyBadges interfaceBuyBadges = new InterfaceBuyBadges("Achat de badge - Péage", 9);
-                    main.getServer().getPluginManager().registerEvents(interfaceBuyBadges, main);
-                    interfaceBuyBadges.openInventory((HumanEntity) sender);
+
+                if (args[0].equalsIgnoreCase("badge") && args.length >= 6) {
+                    ItemStack badge = new ItemStack(Material.PAPER, 1);
+                    ItemMeta itemMeta = badge.getItemMeta();
+                    if(itemMeta != null) {
+                        BadgeParser badgeParser = new BadgeParser();
+                        Network badgeNetwork = Network.getNetworkFromName(args[1]);
+
+                        if (badgeNetwork != null){
+                            if (!badgeNetwork.isOwner(player)){
+                                Chat.send(player, "&cVous n'êtes pas le propriétaire de ce réseau.");
+                                return true;
+                            }
+
+                            if (args[2].equals("all")){
+                                badgeParser.setFullNetwork(true);
+                            } else {
+                                Stand badgeStand = Stand.getStandFromName(args[2]);
+                                if (badgeStand != null){
+                                    badgeParser.setStand(badgeStand);
+                                } else {
+                                    Chat.send(player, "&cLa zone &r" + args[2] + "&c n'existe pas.");
+                                    return true;
+                                }
+                            }
+                        } else {
+                            Chat.send(player, "&cLe réseau &r" + args[1] + "&c n'existe pas.");
+                            return true;
+                        }
+
+                        if (!args[3].equals("freepass") && !args[3].equals("reducpass")){
+                            Chat.send(player, "&cLe type de badge &f"+args[3]+"&c n'existe pas.");
+                            return true;
+                        }
+
+                        if (!args[4].equals("unlimited") && !args[4].equals("limited")){
+                            Chat.send(player, "&cLe type de forfait &f"+args[4]+"&c n'existe pas.");
+                            return true;
+                        }
+
+                        if (args[3].equals("reducpass")){
+                            if (!CheckDoubleInteger.isDouble(args[5])){
+                                Chat.send(player, "&cLa réduction de &f"+args[5]+"%&c est invalide.");
+                                return true;
+                            }
+                            badgeParser.setReduction(Double.parseDouble(args[5]) / 100);
+
+                            if (args[4].equals("limited")) {
+                                if (args.length < 7) return false;
+                                if (!CheckDoubleInteger.isInteger(args[6])) {
+                                    Chat.send(player, "&cLe nombre d'utilisation &f" + args[6] + "&c est invalide.");
+                                    return true;
+                                }
+                                badgeParser.setQuantity(Integer.parseInt(args[6]));
+                            }
+
+
+                        } else {
+                            if(args[4].equals("limited")) {
+                                if (!CheckDoubleInteger.isInteger(args[5])) {
+                                    Chat.send(player, "&cLe nombre d'utilisation &f" + args[5] + "&c est invalide.");
+                                    return true;
+                                }
+
+                                badgeParser.setQuantity(Integer.parseInt(args[5]));
+                            }
+                        }
+
+
+                        badgeParser.setQuantityType(args[4]);
+                        badgeParser.setBadgeType(args[3]);
+                        badgeParser.setNetwork(badgeNetwork);
+
+                        itemMeta.setLocalizedName(badgeParser.getTag());
+                        itemMeta.setLore(badgeParser.getLore());
+                        itemMeta.setDisplayName(badgeParser.getDisplayName());
+
+                        badge.setItemMeta(itemMeta);
+                        player.getInventory().addItem(badge);
+                        Chat.send(player, "&aBadge ajouté à votre inventaire.");
+                        Chat.send(player, "&6Attention: Les badges ne sont ");
+                    }
+                    return true;
                 }
 
                 if (args[0].equalsIgnoreCase("pay") && args.length >= 2) {
@@ -201,7 +253,7 @@ public class CommandPeage implements CommandExecutor {
                     if (args[1].equalsIgnoreCase("list")){
                         Chat.send(player, "Liste des réseaux créés :");
                         for(Network listNetworks: networks){
-                            Chat.send(player, "&a - " + listNetworks.getName() + " &r avec " + listNetworks.getContent().size() + " stand(s)");
+                            Chat.send(player, "&a - " + listNetworks.getName() + " &r avec " + listNetworks.getContent().size() + " zone(s)");
                         }
                         return true;
                     }

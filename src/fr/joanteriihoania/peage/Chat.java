@@ -1,12 +1,15 @@
 package fr.joanteriihoania.peage;
 
-import net.md_5.bungee.api.chat.TextComponent;
 import org.bukkit.ChatColor;
 import org.bukkit.command.CommandSender;
 
 public class Chat {
 
-    private static final String prefix = "&9&l[&r&bPéage&r&9&l]&r";
+    private static String prefix;
+
+    public static void setPrefix(String prefix) {
+        Chat.prefix = prefix;
+    }
 
     public static void send(CommandSender sender, String text){
         sender.sendMessage(ChatColor.translateAlternateColorCodes('&', prefix + " &r" + text));

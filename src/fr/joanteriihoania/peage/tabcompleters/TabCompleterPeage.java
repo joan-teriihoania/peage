@@ -24,6 +24,7 @@ public class TabCompleterPeage implements TabCompleter {
 
             listToReturn.add("network");
             listToReturn.add("area");
+            listToReturn.add("badge");
         }
 
         if(args.length == 2 && (args[0].equals("network") || args[0].equals("area"))){
@@ -32,6 +33,51 @@ public class TabCompleterPeage implements TabCompleter {
             listToReturn.add("delete");
             listToReturn.add("edit");
             listToReturn.add("set");
+        }
+
+        if(args.length > 1 && args[0].equals("badge")){
+            if (args.length == 2) {
+                for (Network network : Network.getOwnedBy(Bukkit.getPlayer(sender.getName()))) {
+                    listToReturn.add(network.getName());
+                }
+            }
+
+            if (args.length == 3){
+                listToReturn.add("all");
+                for (Network network : Network.getOwnedBy(Bukkit.getPlayer(sender.getName()))) {
+                    if (network.getName().equals(args[1])) {
+                        for (Stand stand : network.getContent()) {
+                            listToReturn.add(stand.getName());
+                        }
+                    }
+                }
+            }
+
+            if (args.length == 4){
+                listToReturn.add("freepass");
+                listToReturn.add("reducpass");
+            }
+
+            if (args.length == 5){
+                listToReturn.add("unlimited");
+                listToReturn.add("limited");
+            }
+
+            if (args.length == 6){
+                if (args[3].equals("reducpass")) {
+                    listToReturn.add("<Reduction en %>");
+                }
+
+                if (args[3].equals("freepass") && args[4].equals("limited")) {
+                    listToReturn.add("<Nombre d'utilisation>");
+                }
+            }
+
+            if (args.length == 7){
+                if (args[3].equals("reducpass") && args[4].equals("limited")) {
+                    listToReturn.add("<Nombre d'utilisation>");
+                }
+            }
         }
 
         if(args[0].equals("network") && args.length > 2){

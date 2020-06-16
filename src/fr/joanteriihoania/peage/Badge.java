@@ -14,6 +14,7 @@ public class Badge {
     private int id;
     private Network network;
     private Stand stand;
+    private boolean fullNetwork;
     private double price;
     private String badgeType;
     private String quantityType;
@@ -21,11 +22,12 @@ public class Badge {
     private int quantity;
 
 
-    public Badge(Network network, Stand stand, double price, String badgeType, String quantityType, double reduction, int quantity) {
+    public Badge(Network network, Stand stand, boolean fullNetwork, double price, String badgeType, String quantityType, double reduction, int quantity) {
         id = autoinc;
         autoinc++;
         this.network = network;
         this.stand = stand;
+        this.fullNetwork = fullNetwork;
         this.price = price;
         this.badgeType = badgeType;
         this.quantityType = quantityType;
@@ -38,6 +40,10 @@ public class Badge {
         return allBadges;
     }
 
+    public boolean isFullNetwork() {
+        return fullNetwork;
+    }
+
     public static Badge getBadgeFromId(String text){
         for (Badge badge: allBadges){
             if (badge.getUniqueId().equals(text)){
@@ -47,29 +53,45 @@ public class Badge {
         return null;
     }
 
+    public static ArrayList<Badge> getBadgesFromNetwork(Network bnetwork){
+        ArrayList<Badge> toreturn = new ArrayList<>();
+        for (Badge badge: allBadges){
+            if (badge.network.getUniqueId().equals(bnetwork.getUniqueId())){
+                toreturn.add(badge);
+            }
+        }
+        return toreturn;
+    }
+
     public String getUniqueId() {
         return id + "";
     }
 
+    public Network getNetwork() {
+        return network;
+    }
 
-    public String getTag(){
-        ArrayList<String> toreturnArray = new ArrayList<>();
-        toreturnArray.add(getUniqueId());
-        toreturnArray.add("peage");
-        toreturnArray.add(network.getUniqueId());
-        toreturnArray.add(stand.getUniqueId());
-        toreturnArray.add(badgeType);
-        toreturnArray.add(quantityType);
+    public Stand getStand() {
+        return stand;
+    }
 
-        if (badgeType.equals("reducpass")){
-            toreturnArray.add(reduction + "");
-        }
+    public double getPrice() {
+        return price;
+    }
 
-        if (quantityType.equals("limited")){
-            toreturnArray.add(quantity + "");
-        }
+    public String getBadgeType() {
+        return badgeType;
+    }
 
-        toreturnArray.add(System.currentTimeMillis() + "");
-        return String.join("-", toreturnArray);
+    public String getQuantityType() {
+        return quantityType;
+    }
+
+    public double getReduction() {
+        return reduction;
+    }
+
+    public int getQuantity() {
+        return quantity;
     }
 }

@@ -9,7 +9,7 @@ website: http://joan-teriihoania.fr/
 commands:
   peage:
     description: Informations sur le plugin Peage
-    usage: /<peage> [network|stand] [list|create|remove|edit|set] [...]
+    usage: /<peage> [network|area] [list|create|delete|edit|set] [...]
 
 permissions:
   peage.admin:

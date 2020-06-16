@@ -2,6 +2,7 @@ package fr.joanteriihoania.peage;
 
 import fr.joanteriihoania.peage.commands.CommandPeage;
 import fr.joanteriihoania.peage.tabcompleters.TabCompleterPeage;
+import jdk.nashorn.internal.ir.annotations.Ignore;
 import net.milkbowl.vault.economy.Economy;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
@@ -12,9 +13,8 @@ import org.bukkit.block.Sign;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
-import org.bukkit.event.block.Action;
-import org.bukkit.event.block.BlockBreakEvent;
-import org.bukkit.event.block.BlockPlaceEvent;
+import org.bukkit.event.block.*;
+import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.plugin.PluginDescriptionFile;
@@ -42,10 +42,12 @@ public class Main extends JavaPlugin implements Listener {
     public void onEnable() {
         saveDefaultConfig();
         Guichet.setMain(this);
+        Signs.setPrefix(getConfig().getString("prefix"));
+        Chat.setPrefix(getConfig().getString("prefix"));
         commandPeage.setNetworks(networks);
 
-        getCommand("peage").setExecutor(commandPeage);
-        getCommand("peage").setTabCompleter(tabCompleterPeage);
+        Objects.requireNonNull(getCommand("peage")).setExecutor(commandPeage);
+        Objects.requireNonNull(getCommand("peage")).setTabCompleter(tabCompleterPeage);
 
         getServer().getPluginManager().registerEvents(this, this);
 
@@ -71,7 +73,7 @@ public class Main extends JavaPlugin implements Listener {
 
         Console.output(pDF.getName() + " v" + pDF.getVersion() + " enabled");
         Guichet.closeAll();
-        getServer().getScheduler().runTaskLater(this, () -> Bukkit.getPluginManager().callEvent(loopEvent), (long) 20);
+        getServer().getScheduler().runTaskLater(this, () -> Bukkit.getPluginManager().callEvent(loopEvent), 20);
     }
 
     @Override
@@ -132,7 +134,86 @@ public class Main extends JavaPlugin implements Listener {
     }
 
     @EventHandler
+    public void onPistonExtend(BlockPistonExtendEvent event){
+        boolean protectGuichetFromExplosion = getConfig().getBoolean("protectGuichetFromPistonInteraction");
+        if(!protectGuichetFromExplosion) return;
+
+        for (Guichet guichet: Guichet.getAllGuichets()) {
+            for (Block blockDestroyed : event.getBlocks()) {
+                List<Block> toCheck = guichet.getProtectedBlocks();
+                toCheck.add(guichet.getSign().getBlock());
+                for(Block blockProtected: toCheck) {
+                    if (blockProtected.getX() == blockDestroyed.getX() && blockProtected.getY() == blockDestroyed.getY() && blockProtected.getZ() == blockDestroyed.getZ()) {
+                        if (guichet.getNetwork().getOwner() != null && guichet.getNetwork().getOwner().isOnline()) {
+                            Chat.send(Objects.requireNonNull(guichet.getNetwork().getOwner().getPlayer()), "&cTentative de destruction (piston) d'un guichet détectée aux coordonnées &f" + blockDestroyed.getX() + " " + blockDestroyed.getY() + " " + blockDestroyed.getZ());
+                        }
+                        event.setCancelled(true);
+                        return;
+                    }
+                }
+            }
+        }
+    }
+    @EventHandler
+    public void onPistonRetract(BlockPistonRetractEvent event){
+        boolean protectGuichetFromExplosion = getConfig().getBoolean("protectGuichetFromPistonInteraction");
+        if(!protectGuichetFromExplosion) return;
+
+        for (Guichet guichet: Guichet.getAllGuichets()) {
+            for (Block blockDestroyed : event.getBlocks()) {
+                List<Block> toCheck = guichet.getProtectedBlocks();
+                toCheck.add(guichet.getSign().getBlock());
+
+                for(Block blockProtected: toCheck) {
+                    if (blockProtected.getX() == blockDestroyed.getX() && blockProtected.getY() == blockDestroyed.getY() && blockProtected.getZ() == blockDestroyed.getZ()) {
+                        if (guichet.getNetwork().getOwner() != null && guichet.getNetwork().getOwner().isOnline()) {
+                            Chat.send(Objects.requireNonNull(guichet.getNetwork().getOwner().getPlayer()), "&cTentative de destruction (piston) d'un guichet détectée aux coordonnées &f" + blockDestroyed.getX() + " " + blockDestroyed.getY() + " " + blockDestroyed.getZ());
+                        }
+                        event.setCancelled(true);
+                        return;
+                    }
+                }
+            }
+        }
+    }
+
+    @EventHandler
+    public void onBlockExplode(EntityExplodeEvent event){
+        boolean protectGuichetFromExplosion = getConfig().getBoolean("protectGuichetFromExplosion");
+        if(!protectGuichetFromExplosion) return;
+
+        for (Guichet guichet: Guichet.getAllGuichets()){
+            for (Block blockDestroyed : event.blockList()) {
+                List<Block> toCheck = guichet.getProtectedBlocks();
+                toCheck.add(guichet.getSign().getBlock());
+
+                for(Block blockProtected: toCheck) {
+                    if (blockProtected.getX() == blockDestroyed.getX() && blockProtected.getY() == blockDestroyed.getY() && blockProtected.getZ() == blockDestroyed.getZ()) {
+                        if (guichet.getNetwork().getOwner() != null && guichet.getNetwork().getOwner().isOnline()) {
+                            Chat.send(Objects.requireNonNull(guichet.getNetwork().getOwner().getPlayer()), "&cTentative de destruction (explosion) d'un guichet détectée aux coordonnées &f" + blockDestroyed.getX() + " " + blockDestroyed.getY() + " " + blockDestroyed.getZ());
+                        }
+                        event.setCancelled(true);
+                        return;
+                    }
+                }
+            }
+        }
+    }
+
+    @EventHandler
     public void onBlockBreak(BlockBreakEvent event){
+        for(Guichet guichet: Guichet.getAllGuichets()){
+            for(Block block: guichet.getProtectedBlocks()){
+                if (block != null) {
+                    Location eventLocation = event.getBlock().getLocation();
+                    Location blockLocation = block.getLocation();
+                    if (eventLocation.getBlockX() == blockLocation.getBlockX() && eventLocation.getBlockY() == blockLocation.getBlockY() && eventLocation.getBlockZ() == blockLocation.getBlockZ()) {
+                        event.setCancelled(true);
+                    }
+                }
+            }
+        }
+
         BlockState blockState = event.getBlock().getState();
         Player player = event.getPlayer();
         if (blockState instanceof Sign){

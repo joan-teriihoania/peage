@@ -10,11 +10,10 @@ import java.util.ArrayList;
 
 public class BadgeParser {
 
-
-
     private int id;
     private Network network;
     private Stand stand;
+    private boolean fullNetwork = false;
     private String badgeType;
     private String quantityType;
     private double reduction;
@@ -23,8 +22,9 @@ public class BadgeParser {
 
     public ArrayList<String> getLore() {
         ArrayList<String> toreturn = new ArrayList<>();
+
         ArrayList<String> toreturnFormatted = new ArrayList<>();
-        toreturn.add("&bRéseau : &f" + network.getName());
+        if(network != null) toreturn.add("&bRéseau : &f" + network.getName());
 
         if (stand == null) {
             toreturn.add("&bZone : &fRéseau entier");
@@ -51,8 +51,18 @@ public class BadgeParser {
         return toreturnFormatted;
     }
 
+    public BadgeParser fromBadge(Badge badge){
+        network = badge.getNetwork();
+        stand = badge.getStand();
+        fullNetwork = badge.isFullNetwork();
+        badgeType = badge.getBadgeType();
+        quantityType = badge.getQuantityType();
+        reduction = badge.getReduction();
+        quantity = badge.getQuantity();
+        return this;
+    }
+
     public BadgeParser fromTag(String tag){
-        Console.output(tag);
         String[] tagArray = tag.split("-");
         if (tagArray.length >= 1 && CheckDoubleInteger.isInteger(tagArray[0])){
             id = Integer.parseInt(tagArray[0]);
@@ -65,6 +75,7 @@ public class BadgeParser {
             quantityType = tagArray[5];
         }
 
+        if (tagArray.length >= 4 && tagArray[3].equals("all")) fullNetwork = true;
         if (tagArray.length >= 8 && badgeType.equals("reducpass") && CheckDoubleInteger.isDouble(tagArray[6])){
             reduction = Double.parseDouble(tagArray[6]);
             if (quantityType.equals("limited") && CheckDoubleInteger.isInteger(tagArray[7])){
@@ -87,28 +98,35 @@ public class BadgeParser {
 
 
     public boolean canOpen(Guichet guichet){
-        if (quantityType.equals("limited") && quantity <= 0) return false;
+        if (quantityType != null && quantityType.equals("limited") && quantity <= 0) return false;
         return isBadgeInNetwork(guichet.getNetwork()) && isBadgeInStand(guichet.getStand());
     }
 
 
     public boolean isBadgeInNetwork(Network bnetwork){
+        if (network == null) return false;
         return bnetwork.getUniqueId().equals(network.getUniqueId());
     }
 
     public boolean isBadgeInStand(Stand bstand){
+        if (stand == null) return true;
         return (bstand.getUniqueId().equals(stand.getUniqueId()) || stand.getName().equals("all"));
     }
 
-    public void useBadge(Player player, Guichet guichet){
-        if (quantityType.equals("limited")) quantity--;
+    public boolean useBadge(Player player, Guichet guichet){
+        boolean operationAccepted = false;
+
+        if (badgeType != null && badgeType.equals("reducpass")) operationAccepted = guichet.clicked(player, guichet.getStand().getPrice() * (1-reduction));
+        if (operationAccepted && quantityType != null && quantityType.equals("limited")) quantity--;
+
         ItemStack item = player.getInventory().getItemInMainHand();
-        guichet.clicked(player, guichet.getStand().getPrice() * (1-reduction));
         updateLore(player, item);
+
+        return operationAccepted;
     }
 
     public void updateLore(Player player, ItemStack item){
-        if (quantity <= 0 && quantityType.equals("limited")){
+        if (quantity <= 0 && quantityType != null && quantityType.equals("limited")){
             Chat.send(player, "&cVous avez atteint la limite de votre badge");
             player.getInventory().removeItem(item);
         }
@@ -128,8 +146,9 @@ public class BadgeParser {
         ArrayList<String> toreturnArray = new ArrayList<>();
         toreturnArray.add(getUniqueId());
         toreturnArray.add("peage");
-        toreturnArray.add(network.getUniqueId());
-        toreturnArray.add(stand.getUniqueId());
+        if(network != null) toreturnArray.add(network.getUniqueId());
+        if(stand != null) toreturnArray.add(stand.getUniqueId());
+        if(stand == null) toreturnArray.add("all");
         toreturnArray.add(badgeType);
         toreturnArray.add(quantityType);
 
@@ -145,7 +164,13 @@ public class BadgeParser {
         return String.join("-", toreturnArray);
     }
 
+    public boolean isFullNetwork() {
+        return fullNetwork;
+    }
 
+    public void setFullNetwork(boolean fullNetwork) {
+        this.fullNetwork = fullNetwork;
+    }
 
     public BadgeParser setId(int id) {
         this.id = id;
@@ -153,6 +178,7 @@ public class BadgeParser {
     }
 
     public String getDisplayName() {
+        if (network == null) return ChatColor.translateAlternateColorCodes('&', "&cBadge invalide");
         return ChatColor.translateAlternateColorCodes('&', "&9&l[&bBadge de &f"+network.getName()+"&9&l]");
     }
 

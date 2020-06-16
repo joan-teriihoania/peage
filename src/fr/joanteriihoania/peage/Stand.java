@@ -65,8 +65,13 @@ public class Stand implements Structure {
         this(autoinc + "", new ArrayList<>(), 0);
     }
 
-    public void delete(){;
+    public void delete(){
         allStands.remove(this);
+
+        for (Network network: Network.getAllNetworks()){
+            network.getContent().remove(this);
+        }
+
         for(Guichet guichet: content){
             guichet.delete();
         }
