@@ -11,7 +11,12 @@ par le biais d'un plugin d'Economie (avec Vault). Il est basé
 sur un circuit autoroutier français ouvert.
 
 ## Installation
-Vous pouvez installer le plugin en téléchargeant le fichier `build.jar`.
+Vous pouvez installer le plugin en téléchargeant la dernière version jar
+qui se trouve dans le dépôt. Vous pouvez également télécharger le dépôt.
+
+### Prérequis
+Ce plugin a été développé sous un environnement Java 8 pour Spigot en 
+api-version `1.15`. Vous devez avoir un plugin d'économie sur votre serveur ainsi que Vault.
 
 
 ## Configuration
@@ -146,3 +151,14 @@ et admin peuvent créer un badge pour un réseau).
  - `/peage badge [Nom du réseau] [Nom de la zone] freepass limited [Nombre d'utilisation]`
  - `/peage badge [Nom du réseau] [Nom de la zone] reducpass unlimited [Réduction en %]`
  - `/peage badge [Nom du réseau] [Nom de la zone] reducpass limited [Réduction en %] [Nombre d'utilisation]`
+ 
+ # Licence
+ Copyright 2020 TERIIHOANIA Joan Heimanu
+ 
+ Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+ 
+ The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+ 
+ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ 
+ Except as contained in this notice, the name of the TERIIHOANIA Joan Heimanu shall not be used in advertising or otherwise to promote the sale, use or other dealings in this Software without prior written authorization from the TERIIHOANIA Joan Heimanu
