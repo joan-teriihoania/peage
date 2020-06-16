@@ -117,6 +117,7 @@ public class BadgeParser {
         boolean operationAccepted = false;
 
         if (badgeType != null && badgeType.equals("reducpass")) operationAccepted = guichet.clicked(player, guichet.getStand().getPrice() * (1-reduction));
+        if (badgeType != null && badgeType.equals("freepass")) operationAccepted = true;
         if (operationAccepted && quantityType != null && quantityType.equals("limited")) quantity--;
 
         ItemStack item = player.getInventory().getItemInMainHand();

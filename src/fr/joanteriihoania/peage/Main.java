@@ -92,7 +92,9 @@ public class Main extends JavaPlugin implements Listener {
 
     @EventHandler
     public void onTick(LoopEvent event){
-        int timeOutGuichet = 15*2;
+        int refreshPerSecond = getConfig().getInt("refreshPerSecond");
+        if (refreshPerSecond <= 0) refreshPerSecond = 2;
+        int timeOutGuichet = getConfig().getInt("timeOutGuichet")*refreshPerSecond;
         ArrayList<Guichet> guichetsToDelete = new ArrayList<>();
         for (Map.Entry<Guichet, Integer> entry: guichetsTriggered.entrySet()){
             if (entry.getValue() > timeOutGuichet){
@@ -112,7 +114,7 @@ public class Main extends JavaPlugin implements Listener {
             guichet.onTick(guichetsTriggered);
         }
 
-        getServer().getScheduler().runTaskLater(this, () -> Bukkit.getPluginManager().callEvent(loopEvent), (long) 10);
+        getServer().getScheduler().runTaskLater(this, () -> Bukkit.getPluginManager().callEvent(loopEvent), (long) 20/refreshPerSecond);
     }
 
     private boolean setupEconomy() {

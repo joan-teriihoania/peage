@@ -89,7 +89,7 @@ public class CommandPeage implements CommandExecutor {
                     }
                 }
 
-                if (args[0].equalsIgnoreCase("badge") && args.length >= 6) {
+                if (args[0].equalsIgnoreCase("badge") && args.length >= 5) {
                     ItemStack badge = new ItemStack(Material.PAPER, 1);
                     ItemMeta itemMeta = badge.getItemMeta();
                     if(itemMeta != null) {
@@ -104,6 +104,7 @@ public class CommandPeage implements CommandExecutor {
 
                             if (args[2].equals("all")){
                                 badgeParser.setFullNetwork(true);
+                                badgeParser.setStand(null);
                             } else {
                                 Stand badgeStand = Stand.getStandFromName(args[2]);
                                 if (badgeStand != null){
@@ -143,8 +144,6 @@ public class CommandPeage implements CommandExecutor {
                                 }
                                 badgeParser.setQuantity(Integer.parseInt(args[6]));
                             }
-
-
                         } else {
                             if(args[4].equals("limited")) {
                                 if (!CheckDoubleInteger.isInteger(args[5])) {
@@ -168,7 +167,6 @@ public class CommandPeage implements CommandExecutor {
                         badge.setItemMeta(itemMeta);
                         player.getInventory().addItem(badge);
                         Chat.send(player, "&aBadge ajouté à votre inventaire.");
-                        Chat.send(player, "&6Attention: Les badges ne sont ");
                     }
                     return true;
                 }

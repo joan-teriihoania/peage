@@ -2,3 +2,5 @@ displayMessageWhenArriveAtGuichet: true
 protectGuichetFromExplosion: true
 protectGuichetFromPistonInteraction: true
 prefix: "&9&l[&r&bPéage&r&9&l]&r"
+timeOutGuichet: 15
+refreshPerSecond: 2
