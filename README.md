@@ -136,14 +136,14 @@ les zones se surmontent.**
 Vous pouvez créer des badges que les gens peuvent placer dans leur main
 pour passer au niveau des péages. Ces badges peuvent être :
  - Passage gratuit (freepass),
- - Passage aux prix réduit de `x`% (reducpass).
+ - Passage aux prix réduit de `x`% sur le prix du guichet (reducpass).
 
 Chaque badge peut avoir un nombre d'utilisation limité ou non.
 Voici la liste des commandes pour les créer (seuls les propriétaires
 et admin peuvent créer un badge pour un réseau).
 
 > **Note :** Vous pouvez mettre "all" en nom de zone. Cela permet à un badge
->de pouvoir déverouiller toutes les zones du réseau.
+>de pouvoir ouvrir toutes les zones du réseau.
 
  - `/peage badge [Nom du réseau] [Nom de la zone] freepass unlimited`
  - `/peage badge [Nom du réseau] [Nom de la zone] freepass limited [Nombre d'utilisation]`
