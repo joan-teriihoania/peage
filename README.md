@@ -41,7 +41,7 @@ api-version `1.15`. Vous devez avoir un plugin d'économie sur votre serveur ain
 
 
 ## Configuration
-Le fichier de configuration contient 4 variables :
+Le fichier de configuration contient 6 variables :
 ```yaml
 # Displays the purchase message via chat to incoming players
 # in the detection area of a counter
