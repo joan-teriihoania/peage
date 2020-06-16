@@ -120,14 +120,11 @@ Un guichet est composé de quatre parties :
 Le panneau est la pancarte sur laquelle le guichet est affecté. A partir de
 cette pancarte, la zone d'entrée, de sortie et la barrière sont placées
 suivant la **direction pointée par la pancarte**.
-
 **Le centre de la zone d'entrée** est placé sur le bloc devant le panneau.
 Elle sert à détecter les arrivants et recherche la présence d'un badge.
-
 **La barrière** est placée deux blocs à gauche du centre de l'entrée.
-
 **Le centre de la zone de sortie** est placé trois blocs à gauche de la barrière.
-ELle sert à refermer la barrière et le guichet au passage d'un joueur.
+Elle sert à refermer la barrière et le guichet au passage d'un joueur.
 
 **Il est déconseillé de placer les guichets trop proches de façon à ce que
 les zones se surmontent.**
