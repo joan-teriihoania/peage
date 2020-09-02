@@ -1,10 +1,6 @@
 package fr.joanteriihoania.peage;
 
-import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
-import sun.nio.ch.Net;
-
-import java.sql.Array;
 import java.util.ArrayList;
 
 public class Network implements Structure {
@@ -14,9 +10,9 @@ public class Network implements Structure {
     private int id;
     private String name;
     private ArrayList<Stand> content;
-    private OfflinePlayer owner;
+    private Player owner;
 
-    public Network(String name, ArrayList<Stand> content, OfflinePlayer owner) {
+    public Network(String name, ArrayList<Stand> content, Player owner) {
         while (existsId(autoinc)) autoinc++;
         id = autoinc;
         autoinc++;
@@ -30,11 +26,11 @@ public class Network implements Structure {
         this(autoinc + "", content, owner);
     }
 
-    public OfflinePlayer getOwner() {
+    public Player getOwner() {
         return owner;
     }
 
-    public void setOwner(OfflinePlayer owner) {
+    public void setOwner(Player owner) {
         this.owner = owner;
     }
 
@@ -160,12 +156,10 @@ public class Network implements Structure {
     }
 
     public void delete(){
-        allNetworks.remove(this);
         for(Stand stand: content){
-            Console.output("Deleting " + stand.getName());
             stand.delete();
-            Console.output("Deleted " + stand.getName());
         }
+        allNetworks.remove(this);
     }
 
     public ArrayList<Stand> getContent() {

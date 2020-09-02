@@ -121,6 +121,7 @@ public class Stand implements Structure {
     public void addContent(Guichet guichet){
         content.add(guichet);
     }
+
     public void removeContent(Guichet guichet){
         content.remove(guichet);
     }

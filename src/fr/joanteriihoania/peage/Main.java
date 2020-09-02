@@ -252,28 +252,13 @@ public class Main extends JavaPlugin implements Listener {
 
     @EventHandler
     public void onJoin(PlayerJoinEvent event){
+        Chat.sendUnsentMessages(event.getPlayer());
         for (Network network: Network.getAllNetworks()){
-            OfflinePlayer owner = network.getOwner();
-            if (owner != null && owner.getName() != null && owner.getName().equals(event.getPlayer().getName())){
-                for (Stand stand: network.getContent()){
-                    boolean warn = false;
-                    for(Guichet guichet: stand.getContent()){
-                        if (guichet.getSign() != null){
-                            if (!(guichet.getSign().getBlock().getState() instanceof Sign)) {
-                                Location tempLoc = guichet.getSign().getLocation();
-                                Chat.send(event.getPlayer(), "&cWARN: Guichet with no sign at &r" + tempLoc.getBlockX() + " " + tempLoc.getBlockY() + " " + tempLoc.getBlockZ());
-                                warn = true;
-                            }
-                        }
-                    }
-
-                    if(warn) {
-                        Chat.send(event.getPlayer(),
-                                "&fThis may be caused by &cplayer/terrain destruction&f or &cchunk corruption&f. " +
-                                        "The guichet will be loaded for now but you should consider check it yourself. " +
-                                        "The guichet &ccan be deleted&f for memory preservation in the future."
-                        );
-                    }
+            Player owner = network.getOwner();
+            if (owner != null) {
+                owner.getName();
+                if (owner.getName().equals(event.getPlayer().getName())) {
+                    network.setOwner(event.getPlayer());
                 }
             }
         }

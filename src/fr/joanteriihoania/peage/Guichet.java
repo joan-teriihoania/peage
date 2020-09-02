@@ -230,7 +230,7 @@ public class Guichet implements Structure {
         if(locked) return false;
         double balance = mainInstance.economy.getBalance(player);
         if (balance - price >= 0) {
-            OfflinePlayer owner = network.getOwner();
+            Player owner = network.getOwner();
             if (owner != null) {
                 OfflinePlayer recipient = Bukkit.getOfflinePlayer(owner.getUniqueId());
                 mainInstance.economy.withdrawPlayer(player, price);
@@ -238,12 +238,7 @@ public class Guichet implements Structure {
 
                 if (!player.getName().equals(owner.getName())) {
                     Chat.send(player, "Vous avez payé &a" + price + "&r€ à &a" + stand.getName() + "&r de &a" + network.getName() + "&r.");
-                    Chat.send(player, network.getName() + " vous souhaite bonne route !");
-
-                    if (owner.isOnline()) {
-                        Player onlineOwner = owner.getPlayer();
-                        Chat.send(onlineOwner, player.getDisplayName() + " a payé &a" + price + "&r€ à &a" + stand.getName() + "&r de &a" + network.getName() + "&r.");
-                    }
+                    Chat.send(owner.getPlayer(), player.getDisplayName() + " a payé &a" + price + "&r€ à &a" + stand.getName() + "&r de &a" + network.getName() + "&r.");
                 } else {
                     Chat.send(player, "Vous vous êtes payé &a" + price + "&r€ &a" + stand.getName() + "&r de &a" + network.getName() + "&r.");
                 }
@@ -294,7 +289,6 @@ public class Guichet implements Structure {
 
     public void delete(){
         mainInstance.removeGuichetTriggered(this);
-        allGuichets.remove(this);
         unlock();
         open();
         Signs.set(sign, new String[]{
@@ -302,6 +296,13 @@ public class Guichet implements Structure {
                 "&cPéage supprimé",
                 ""
         });
+        this.remove();
+    }
+
+
+    public void remove(){
+        allGuichets.remove(this);
+        stand.removeContent(this);
     }
 
     public void PlayerEnterEvent(Player player){
@@ -439,11 +440,6 @@ public class Guichet implements Structure {
 
     public static ArrayList<Guichet> getAllGuichets() {
         return allGuichets;
-    }
-
-    public void remove(){
-        allGuichets.remove(this);
-        stand.removeContent(this);
     }
 
     public static Guichet getGuichetFromLocation(Location locGuichet) {

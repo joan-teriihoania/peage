@@ -130,6 +130,7 @@ public class CommandPeage implements CommandExecutor {
                         }
 
                         if (args[3].equals("reducpass")){
+                            if (args.length < 6) return false;
                             if (!CheckDoubleInteger.isDouble(args[5])){
                                 Chat.send(player, "&cLa réduction de &f"+args[5]+"%&c est invalide.");
                                 return true;
@@ -146,6 +147,7 @@ public class CommandPeage implements CommandExecutor {
                             }
                         } else {
                             if(args[4].equals("limited")) {
+                                if (args.length < 6) return false;
                                 if (!CheckDoubleInteger.isInteger(args[5])) {
                                     Chat.send(player, "&cLe nombre d'utilisation &f" + args[5] + "&c est invalide.");
                                     return true;
