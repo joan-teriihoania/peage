@@ -1,5 +1,9 @@
 # Plugin Spigot Péage
 
+Ce plugin est toujours en cours de développement.
+
+This plugin is still a work in progress.
+
 ## Résumé
 
 This plugin was created by TERIIHOANIA Joan Heimanu alias Arcadia_sama accompanied
