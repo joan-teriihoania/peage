@@ -93,8 +93,7 @@ public class Network implements Structure {
     public boolean isOwner(Player player){
         if(player.hasPermission("peage.admin")) return true;
         if (owner == null) return false;
-        if(player.getName().equals(owner.getName())) return true;
-        return false;
+        return player.getName().equals(owner.getName());
     }
 
     public Network(){
@@ -159,6 +158,7 @@ public class Network implements Structure {
         for(Stand stand: content){
             stand.delete();
         }
+
         allNetworks.remove(this);
     }
 

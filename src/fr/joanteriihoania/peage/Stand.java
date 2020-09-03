@@ -76,8 +76,6 @@ public class Stand implements Structure {
     }
 
     public void delete(){
-        allStands.remove(this);
-
         for (Network network: Network.getAllNetworks()){
             network.getContent().remove(this);
         }
@@ -85,6 +83,8 @@ public class Stand implements Structure {
         for(Guichet guichet: content){
             guichet.delete();
         }
+
+        allStands.remove(this);
     }
 
     @Override
