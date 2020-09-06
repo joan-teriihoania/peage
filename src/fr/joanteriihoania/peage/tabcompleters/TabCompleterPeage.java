@@ -6,6 +6,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabCompleter;
+import org.bukkit.entity.Player;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -33,6 +34,11 @@ public class TabCompleterPeage implements TabCompleter {
             listToReturn.add("delete");
             listToReturn.add("edit");
             listToReturn.add("set");
+        }
+
+        if(args.length == 2 && args[0].equals("network")){
+            listToReturn.add("trust");
+            listToReturn.add("untrust");
         }
 
         if(args.length > 1 && args[0].equals("badge")){
@@ -85,6 +91,20 @@ public class TabCompleterPeage implements TabCompleter {
                 if (args.length == 3) {
                     for (Network network : Network.getOwnedBy(Bukkit.getPlayer(sender.getName()))) {
                         listToReturn.add(network.getName());
+                    }
+                }
+            }
+
+            if (args[1].equals("trust") || args[1].equals("untrust")){
+                if (args.length == 3) {
+                    for (Network network : Network.getOwnedBy(Bukkit.getPlayer(sender.getName()))) {
+                        listToReturn.add(network.getName());
+                    }
+                }
+
+                if (args.length == 4){
+                    for (Player playerOnline: Bukkit.getOnlinePlayers()){
+                        listToReturn.add(playerOnline.getName());
                     }
                 }
             }

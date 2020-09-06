@@ -2,6 +2,7 @@ package fr.joanteriihoania.peage.commands;
 
 import com.sun.java.accessibility.util.GUIInitializedListener;
 import fr.joanteriihoania.peage.*;
+import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
@@ -205,6 +206,46 @@ public class CommandPeage implements CommandExecutor {
                 }
 
                 if (args[0].equalsIgnoreCase("network") && args.length > 1) {
+                    if (args[1].equalsIgnoreCase("trust") && args.length >= 3) {
+                        boolean networkExists = Network.existsName(args[2]);
+                        Network selNetwork = Network.getNetworkFromName(args[2]);
+                        if (networkExists){
+                            assert selNetwork != null;
+
+                            if (!selNetwork.isOwner(player)){
+                                Chat.send(player, "&cVous n'êtes pas le propriétaire de ce réseau.");
+                                return true;
+                            }
+
+                            if (selNetwork.isTrusted(args[3])){
+                                Chat.send(player, "Ce joueur est déjà co-propriétaire.");
+                            } else {
+                                selNetwork.addTrustedPlayer(args[3]);
+                            }
+                            return true;
+                        }
+                    }
+
+                    if (args[1].equalsIgnoreCase("untrust") && args.length >= 3) {
+                        boolean networkExists = Network.existsName(args[2]);
+                        Network selNetwork = Network.getNetworkFromName(args[2]);
+                        if (networkExists){
+                            assert selNetwork != null;
+
+                            if (!selNetwork.isOwner(player)){
+                                Chat.send(player, "&cVous n'êtes pas le propriétaire de ce réseau.");
+                                return true;
+                            }
+
+                            if (!selNetwork.isTrusted(args[3])){
+                                Chat.send(player, "Ce joueur n'est pas co-propriétaire.");
+                            } else {
+                                selNetwork.removeTrustedPlayer(args[3]);
+                            }
+                            return true;
+                        }
+                    }
+
                     if (args[1].equalsIgnoreCase("delete") && args.length >= 3) {
                         boolean networkExists = Network.existsName(args[2]);
                         Network selNetwork = Network.getNetworkFromName(args[2]);

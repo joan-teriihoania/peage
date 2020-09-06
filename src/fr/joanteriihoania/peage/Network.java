@@ -11,6 +11,7 @@ public class Network implements Structure {
     private String name;
     private ArrayList<Stand> content;
     private Player owner;
+    private ArrayList<String> trustedPlayers = new ArrayList<>();
 
     public Network(String name, ArrayList<Stand> content, Player owner) {
         while (existsId(autoinc)) autoinc++;
@@ -32,6 +33,14 @@ public class Network implements Structure {
 
     public void setOwner(Player owner) {
         this.owner = owner;
+    }
+
+    public void addTrustedPlayer(String playername){
+        trustedPlayers.add(playername);
+    }
+
+    public void removeTrustedPlayer(String playername){
+        trustedPlayers.remove(playername);
     }
 
     public static boolean existsName(String text){
@@ -94,6 +103,11 @@ public class Network implements Structure {
         if(player.hasPermission("peage.admin")) return true;
         if (owner == null) return false;
         return player.getName().equals(owner.getName());
+    }
+
+    public boolean isTrusted(String playername){
+        if (trustedPlayers.isEmpty()) return false;
+        return trustedPlayers.contains(playername);
     }
 
     public Network(){
