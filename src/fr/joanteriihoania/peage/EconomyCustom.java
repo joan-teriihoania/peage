@@ -11,10 +11,12 @@ public class EconomyCustom {
 
     public static boolean withdraw(Player player, double money){
         if (!canPurchase(player, money)) return false;
+        Chat.send(player, "&aVotre compte a été débité (-) d'un montant de &f" + money + "&a€");
         return main.economy.withdrawPlayer(player, money).transactionSuccess();
     }
 
     public static boolean deposit(Player player, double money){
+        Chat.send(player, "&aVotre compte a été crédité (+) d'un montant de &f" + money + "&a€");
         return main.economy.depositPlayer(player, money).transactionSuccess();
     }
 

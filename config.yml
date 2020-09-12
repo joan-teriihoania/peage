@@ -5,10 +5,11 @@ prefix: "&9&l[&r&bPéage&r&9&l]&r"
 timeOutGuichet: 15
 refreshPerSecond: 2
 maxLife: 1000
+dynmapLayerName: "Péage"
 price:
   create:
-    network: 1000
-    server: 700
-    area: 500
-    guichet: 100
+    network: 100
+    server: 50
+    area: 75
+    guichet: 10
     badge: 10

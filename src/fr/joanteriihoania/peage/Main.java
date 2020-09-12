@@ -18,9 +18,15 @@ import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.PluginDescriptionFile;
 import org.bukkit.plugin.RegisteredServiceProvider;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.dynmap.DynmapAPI;
+import org.dynmap.markers.Marker;
+import org.dynmap.markers.MarkerAPI;
+import org.dynmap.markers.MarkerIcon;
+import org.dynmap.markers.MarkerSet;
 
 import java.io.*;
 import java.util.*;
@@ -38,9 +44,17 @@ public class Main extends JavaPlugin implements Listener {
 
     HashMap<Guichet, Integer> guichetsTriggered = new HashMap<>();
 
+    DynmapAPI dynmapAPI;
+    MarkerAPI markerAPI;
+    Plugin dynmap;
+    MarkerSet markerSet;
+    MarkerIcon markerIcon;
+
 
     @Override
     public void onEnable() {
+        loadDynmap();
+
         saveDefaultConfig();
         Guichet.setMainInstance(this);
         Network.setMainInstance(this);
@@ -82,6 +96,12 @@ public class Main extends JavaPlugin implements Listener {
 
     @Override
     public void onDisable() {
+        if(markerSet != null) {
+            markerSet.deleteMarkerSet();
+            markerSet = null;
+        }
+
+        Network.disableAll();
         Guichet.disableAll();
         Guichet.openAll();
 
@@ -92,6 +112,30 @@ public class Main extends JavaPlugin implements Listener {
         }
 
         Console.output(pDF.getName() + " v" + pDF.getVersion() + " disabled");
+    }
+
+    public void loadDynmap(){
+        dynmap = getServer().getPluginManager().getPlugin("dynmap");
+        if (dynmap != null){
+            dynmapAPI = (DynmapAPI)dynmap;
+            markerAPI = dynmapAPI.getMarkerAPI();
+            markerSet = markerAPI.getMarkerSet("peage.markerset");
+            if (markerSet == null){
+                markerSet = markerAPI.createMarkerSet("peage.markerset", getConfig().getString("dynmapLayerName"), null, false);
+            } else {
+                markerSet.setMarkerSetLabel(getConfig().getString("dynmapLayerName"));
+            }
+
+            markerIcon = markerAPI.getMarkerIcon("truck");
+
+            /*
+                try (InputStream png = getClass().getResourceAsStream("/markerIcon.png")) {
+                    markerIcon = markerAPI.createMarkerIcon("peage.markerIcon", "peage_guichet_markericon", png);
+                } catch (IOException e) {
+                    markerIcon = markerAPI.getMarkerIcon("truck");
+                }
+             */
+        }
     }
 
     @EventHandler
@@ -231,7 +275,12 @@ public class Main extends JavaPlugin implements Listener {
             Network network = Network.getNetworkFromLocation(blockState.getLocation());
             if (network != null){
                 if (network.isOwner(player)){
-                    player.getInventory().addItem(new ItemStack(Material.IRON_INGOT, network.getLife()));
+                    double amountToRefund = network.getLife();
+                    int ironBlockToRefund = (int) Math.floor(amountToRefund / 9);
+                    int ironIngotToRefund = network.getLife() - ironBlockToRefund * 9;
+                    player.getInventory().addItem(new ItemStack(Material.IRON_INGOT, ironIngotToRefund));
+                    player.getInventory().addItem(new ItemStack(Material.IRON_BLOCK, ironBlockToRefund));
+                    EconomyCustom.deposit(player, getConfig().getDouble("price.create.server") * 0.5);
                     network.setLife(0);
                     network.setControlPannel(null);
                     Chat.send(player, "&aLe serveur du réseau &r" + network.getName() + "&a a été supprimé.");
@@ -340,6 +389,13 @@ public class Main extends JavaPlugin implements Listener {
     }
 
     public void loadData() throws FileNotFoundException {
+        if (markerSet != null) {
+            markerSet.deleteMarkerSet();
+            markerSet = null;
+        }
+
+        loadDynmap();
+
         Console.output("Loading data...");
         File dataFolder = new File(getDataFolder(), "peageData");
         File networksFolder = new File(dataFolder, "networks");
@@ -422,6 +478,10 @@ public class Main extends JavaPlugin implements Listener {
                                     guichet.setNetwork(network);
                                     guichet.setStand(stand);
                                     stand.addContent(guichet);
+
+                                    if (markerSet != null){
+                                        markerSet.createMarker("guichet-" + guichet.getUniqueId(), "Péage de ["+guichet.getNetwork().getName()+"] - Guichet n°"+guichet.getUniqueId() + " de " + guichet.getStand().getName(), tempLoc.getWorld().getName(), tempLoc.getX(), tempLoc.getY(), tempLoc.getZ(), markerIcon, false);
+                                    }
 
                                     Console.output("INFO:    Guichet loaded : " + guichet.getName() + " (" + guichet.getUniqueId() + ")");
                                 }

@@ -5,6 +5,7 @@ author: Arcadia_sama
 api-version: '1.15'
 load: POSTWORLD
 website: http://joan-teriihoania.fr/
+loadbefore: [dynmap, Vault]
 
 commands:
   peage:

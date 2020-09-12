@@ -7,6 +7,7 @@ import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.Sign;
+import org.bukkit.block.data.type.WallSign;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -233,7 +234,7 @@ public class CommandPeage implements CommandExecutor {
                                         Chat.send(player, "&cUn serveur a déjà été affecté pour ce réseau aux coordonnées &f" + serverCoor);
                                     }
                                 } else {
-                                    Chat.send(player, "&cVous devez regarder un panneau.");
+                                    Chat.send(player, "&cVous devez regarder un panneau mural.");
                                 }
                                 return true;
                             } else {
@@ -370,6 +371,7 @@ public class CommandPeage implements CommandExecutor {
                             }
                         } else {
                             Chat.send(player, "&cFonds insuffisants (Coût: &f" + main.getConfig().getDouble("price.create.network") + "€&c)");
+                            return true;
                         }
                     }
                 }
@@ -474,7 +476,7 @@ public class CommandPeage implements CommandExecutor {
                     }
 
                     if (args[1].equalsIgnoreCase("create") && args.length > 3) {
-                        if (EconomyCustom.withdraw(player, main.getConfig().getDouble("price.create.area"))) {
+                        if (EconomyCustom.withdraw(player, main.getConfig().getDouble("price.create.area"))){
                             boolean networkExists = Network.existsName(args[2]);
                             Network selNetwork = Network.getNetworkFromName(args[2]);
 
@@ -539,7 +541,7 @@ public class CommandPeage implements CommandExecutor {
                                             Chat.send(player, "&cCe panneau est déjà affecté.");
                                         }
                                     } else {
-                                        Chat.send(player, "&cVous devez regarder un panneau.");
+                                        Chat.send(player, "&cVous devez regarder un panneau mural.");
                                     }
                                     return true;
                                 } else {
@@ -563,7 +565,7 @@ public class CommandPeage implements CommandExecutor {
     private Sign playerLookAtSign(Player player){
         Block block = player.getTargetBlockExact(5);
 
-        if (block != null && block.getState() instanceof Sign){
+        if (block != null && block.getState() instanceof Sign && block.getType().name().contains("WALL_SIGN")){
             return (Sign) block.getState();
         } else {
             return null;

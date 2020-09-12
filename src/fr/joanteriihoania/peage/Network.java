@@ -1,7 +1,6 @@
 package fr.joanteriihoania.peage;
 
 import org.bukkit.*;
-import org.bukkit.block.Biome;
 import org.bukkit.block.Block;
 import org.bukkit.block.Sign;
 import org.bukkit.block.data.BlockData;
@@ -22,6 +21,7 @@ public class Network implements Structure {
     private int life = 0;
     private ArrayList<String> trustedPlayers = new ArrayList<>();
     private Sign controlPannel;
+    private boolean isOutOfOrder = false;
 
     public static int getMaxLife() {
         return maxLife;
@@ -125,6 +125,23 @@ public class Network implements Structure {
         return false;
     }
 
+    public void disable(){
+        Sign sign = controlPannel;
+        if (sign != null) {
+            Signs.set(sign, new String[]{
+                    "&cSystem disabled",
+                    "&fDO NOT BREAK",
+                    "&fTHIS SIGN"
+            });
+        }
+    }
+
+    public static void disableAll(){
+        for(Network element: allNetworks) {
+            element.disable();
+        }
+    }
+
     public double usageModifyer(){
         if (controlPannel == null) return 0;
         Block block = controlPannel.getBlock();
@@ -145,6 +162,15 @@ public class Network implements Structure {
             decLife();
         }
 
+        if(isOutOfOrder != isOutOfOrder()){
+            isOutOfOrder = isOutOfOrder();
+            if (isOutOfOrder) {
+                Chat.send(owner, "&cRéseau &f" + name + "&c hors-service.");
+            } else {
+                Chat.send(owner, "&aRéseau &f"+name+"&a en service.");
+            }
+        }
+
         refreshControlPannel();
 
         for (Stand stand: content){
@@ -161,6 +187,7 @@ public class Network implements Structure {
         if (sign != null) {
             String integrity = "&fIntégrité : " + life;
             String status = "";
+
             if (isOutOfOrder()){
                 status = "&cHors-service";
             } else {
