@@ -181,13 +181,17 @@ public class CommandPeage implements CommandExecutor {
                     boolean isNearGuichet = false;
 
                     for(Guichet searchGuichet: Guichet.getAllGuichets()){
-                        if (searchGuichet.getEntranceCenter().getLocation().distance(playerLocation) <= 2){
+                        if (searchGuichet.isInEntrance(player)){
                             guichetTargeted = searchGuichet;
                             isNearGuichet = true;
                         }
                     }
 
                     if (isNearGuichet) {
+                        if (guichetTargeted.isOutOfOrder()){
+                            Chat.send(player, "&cCe guichet est hors-service.");
+                        }
+
                         if (guichetTargeted.getUniqueId().equals(args[1])) {
                             if(!main.isGuichetTriggered(guichetTargeted)) {
                                 main.addGuichetTriggered(guichetTargeted);
@@ -206,7 +210,42 @@ public class CommandPeage implements CommandExecutor {
                 }
 
                 if (args[0].equalsIgnoreCase("network") && args.length > 1) {
-                    if (args[1].equalsIgnoreCase("trust") && args.length >= 3) {
+                    if (args[1].equalsIgnoreCase("set") && args.length >= 3) {
+                        if (EconomyCustom.withdraw(player, main.getConfig().getDouble("price.create.server"))) {
+                            boolean networkExists = Network.existsName(args[2]);
+                            Network selNetwork = Network.getNetworkFromName(args[2]);
+                            if (networkExists) {
+                                assert selNetwork != null;
+                                Sign sign = playerLookAtSign(player);
+                                if (sign != null) {
+                                    if (selNetwork.getControlPannel() == null) {
+                                        if (!Network.exists(sign.getLocation()) && !Guichet.exists(sign.getLocation())) {
+                                            selNetwork.setControlPannel(sign);
+                                            String coor = sign.getX() + " " + sign.getY() + " " + sign.getZ();
+                                            selNetwork.refreshControlPannel();
+                                            Chat.send(player, "&aLe serveur du réseau &f" + selNetwork.getName() + "&a a été affecté aux coordonnées &f" + coor + "&a.");
+                                        } else {
+                                            Chat.send(player, "&cCe panneau est déjà affecté.");
+                                        }
+                                    } else {
+                                        Sign controlPannel = selNetwork.getControlPannel();
+                                        String serverCoor = controlPannel.getX() + " " + controlPannel.getY() + " " + controlPannel.getZ();
+                                        Chat.send(player, "&cUn serveur a déjà été affecté pour ce réseau aux coordonnées &f" + serverCoor);
+                                    }
+                                } else {
+                                    Chat.send(player, "&cVous devez regarder un panneau.");
+                                }
+                                return true;
+                            } else {
+                                Chat.send(player, "&cLe réseau &r" + args[2] + "&c n'existe pas.");
+                            }
+                        } else {
+                            Chat.send(player, "&cFonds insuffisants (Coût: &f" + main.getConfig().getDouble("price.create.server") + "€&c)");
+                        }
+                        return true;
+                    }
+
+                    if (args[1].equalsIgnoreCase("trust") && args.length >= 4) {
                         boolean networkExists = Network.existsName(args[2]);
                         Network selNetwork = Network.getNetworkFromName(args[2]);
                         if (networkExists){
@@ -217,16 +256,25 @@ public class CommandPeage implements CommandExecutor {
                                 return true;
                             }
 
+                            if(player.getName().equals(args[3])){
+                                Chat.send(player, "&cVous êtes propriétaire de ce réseau.");
+                                return true;
+                            }
+
                             if (selNetwork.isTrusted(args[3])){
-                                Chat.send(player, "Ce joueur est déjà co-propriétaire.");
+                                Chat.send(player, args[3] + "&c est déjà co-propriétaire.");
                             } else {
                                 selNetwork.addTrustedPlayer(args[3]);
+                                Chat.send(player, args[3] + "&a est maintenant co-propriétaire.");
                             }
                             return true;
+                        } else {
+                            Chat.send(player, "&cLe réseau &r" + args[2] + "&c n'existe pas.");
                         }
+                        return true;
                     }
 
-                    if (args[1].equalsIgnoreCase("untrust") && args.length >= 3) {
+                    if (args[1].equalsIgnoreCase("untrust") && args.length >= 4) {
                         boolean networkExists = Network.existsName(args[2]);
                         Network selNetwork = Network.getNetworkFromName(args[2]);
                         if (networkExists){
@@ -238,12 +286,16 @@ public class CommandPeage implements CommandExecutor {
                             }
 
                             if (!selNetwork.isTrusted(args[3])){
-                                Chat.send(player, "Ce joueur n'est pas co-propriétaire.");
+                                Chat.send(player, args[3] + "&c n'est pas co-propriétaire.");
                             } else {
                                 selNetwork.removeTrustedPlayer(args[3]);
+                                Chat.send(player, args[3] + "&a n'est plus co-propriétaire.");
                             }
                             return true;
+                        } else {
+                            Chat.send(player, "&cLe réseau &r" + args[2] + "&c n'existe pas.");
                         }
+                        return true;
                     }
 
                     if (args[1].equalsIgnoreCase("delete") && args.length >= 3) {
@@ -292,24 +344,32 @@ public class CommandPeage implements CommandExecutor {
                     }
 
                     if (args[1].equalsIgnoreCase("list")){
-                        Chat.send(player, "Liste des réseaux créés :");
-                        for(Network listNetworks: networks){
-                            Chat.send(player, "&a - " + listNetworks.getName() + " &r avec " + listNetworks.getContent().size() + " zone(s)");
+                        if (networks.isEmpty()){
+                            Chat.send(player, "Aucun réseau n'a été créé.");
+                        } else {
+                            Chat.send(player, "Liste des réseaux créés :");
+                            for (Network listNetworks : networks) {
+                                Chat.send(player, "&a - " + listNetworks.getName() + " &r avec " + listNetworks.getContent().size() + " zone(s)");
+                            }
                         }
                         return true;
                     }
 
                     if (args[1].equalsIgnoreCase("create") && args.length > 2) {
-                        if (!Network.existsName(args[2])) {
-                            Network network = new Network();
-                            network.setName(args[2]);
-                            network.setOwner(player);
-                            networks.add(network);
-                            Chat.send(player, "&aLe réseau &r'" + network.getName() + " (" + network.getUniqueId() + ")'&a a été créé.");
-                            return true;
+                        if (EconomyCustom.withdraw(player, main.getConfig().getDouble("price.create.network"))) {
+                            if (!Network.existsName(args[2])) {
+                                Network network = new Network();
+                                network.setName(args[2]);
+                                network.setOwner(player);
+                                networks.add(network);
+                                Chat.send(player, "&aLe réseau &r'" + network.getName() + " (" + network.getUniqueId() + ")'&a a été créé.");
+                                return true;
+                            } else {
+                                Chat.send(player, "&cUn réseau porte déjà le nom &r" + args[2] + "&c.");
+                                return true;
+                            }
                         } else {
-                            Chat.send(player, "&cUn réseau porte déjà le nom &r" + args[2] + "&c.");
-                            return true;
+                            Chat.send(player, "&cFonds insuffisants (Coût: &f" + main.getConfig().getDouble("price.create.network") + "€&c)");
                         }
                     }
                 }
@@ -329,7 +389,7 @@ public class CommandPeage implements CommandExecutor {
                             if (selNetwork.standNameExists(args[3])){
                                 Stand selStand = selNetwork.getStandFromName(args[3]);
                                 Chat.send(player, "&aLa zone &f" + selStand.getName() + "&a a été supprimée.");
-                                selStand.delete();
+                                selStand.delete(true);
                             } else {
                                 Chat.send(player, "&cLa zone &r" + args[3] + "&c n'existe pas.");
                             }
@@ -369,13 +429,17 @@ public class CommandPeage implements CommandExecutor {
                                 }
 
                                 if (args[4].equalsIgnoreCase("price")){
-                                    if (CheckDoubleInteger.isDouble(args[5])) {
-                                        double newPrice = Double.parseDouble(args[5]);
-                                        selStand.setPrice(newPrice);
-                                        Chat.send(player, "&aLe prix de la zone &r" + selStand.getName() + "&a de &r" + selNetwork.getName() + "&a a été défini à &r" + newPrice);
-                                        Guichet.onEdit(selStand);
+                                    if(!selNetwork.isOutOfOrder()) {
+                                        if (CheckDoubleInteger.isDouble(args[5])) {
+                                            double newPrice = Double.parseDouble(args[5]);
+                                            selStand.setPrice(newPrice);
+                                            Chat.send(player, "&aLe prix de la zone &r" + selStand.getName() + "&a de &r" + selNetwork.getName() + "&a a été défini à &r" + newPrice);
+                                            Guichet.onEdit(selStand);
+                                        } else {
+                                            Chat.send(player, "&cLe prix &r" + args[5] + "&c est invalide.");
+                                        }
                                     } else {
-                                        Chat.send(player, "&cLe prix &r"+args[5]+"&c est invalide.");
+                                        Chat.send(player, "&cVous ne pouvez pas modifier le prix d'une zone dont le réseau est hors-service. Vérifiez que votre réseau possède un serveur fonctionnel.");
                                     }
                                 }
                             } else {
@@ -393,9 +457,14 @@ public class CommandPeage implements CommandExecutor {
                         Network selNetwork = Network.getNetworkFromName(args[2]);
 
                         if(networkExists){
-                            Chat.send(player, "Liste des zones du réseau &a" + selNetwork.getName() + "&r :");
-                            for(Stand listStand: selNetwork.getContent()){
-                                Chat.send(player, "&a - " + listStand.getName() + " avec " + listStand.getContent().size() + " guichet(s)");
+                            assert selNetwork != null;
+                            if(selNetwork.getContent().isEmpty()){
+                                Chat.send(player, "Ce réseau n'a pas de zone.");
+                            } else {
+                                Chat.send(player, "Liste des zones du réseau &a" + selNetwork.getName() + "&r :");
+                                for (Stand listStand : selNetwork.getContent()) {
+                                    Chat.send(player, "&a - " + listStand.getName() + " avec " + listStand.getContent().size() + " guichet(s)");
+                                }
                             }
                         } else {
                             Chat.send(player, "&cLe réseau &r" + args[2] + "&c n'existe pas.");
@@ -405,74 +474,82 @@ public class CommandPeage implements CommandExecutor {
                     }
 
                     if (args[1].equalsIgnoreCase("create") && args.length > 3) {
-                        boolean networkExists = Network.existsName(args[2]);
-                        Network selNetwork = Network.getNetworkFromName(args[2]);
+                        if (EconomyCustom.withdraw(player, main.getConfig().getDouble("price.create.area"))) {
+                            boolean networkExists = Network.existsName(args[2]);
+                            Network selNetwork = Network.getNetworkFromName(args[2]);
 
-                        if (networkExists) {
-                            assert selNetwork != null;
+                            if (networkExists) {
+                                assert selNetwork != null;
 
-                            if (!selNetwork.isOwner(player)){
-                                Chat.send(player, "&cVous n'êtes par le propriétaire de ce réseau.");
-                                return true;
-                            }
+                                if (!selNetwork.isOwner(player)) {
+                                    Chat.send(player, "&cVous n'êtes par le propriétaire de ce réseau.");
+                                    return true;
+                                }
 
-                            if (!args[3].equals("all")) {
-                                if (!selNetwork.standNameExists(args[3])) {
-                                    Stand stand = new Stand();
-                                    stand.setName(args[3]);
-                                    selNetwork.addContent(stand);
-                                    Chat.send(player, "&aLa zone &r'" + stand.getName() + "'&a a été créé.");
+                                if (!args[3].equals("all")) {
+                                    if (!selNetwork.standNameExists(args[3])) {
+                                        Stand stand = new Stand();
+                                        stand.setName(args[3]);
+                                        selNetwork.addContent(stand);
+                                        Chat.send(player, "&aLa zone &r" + stand.getName() + "&a a été créé.");
+                                    } else {
+                                        Chat.send(player, "&cUne zone porte déjà le nom &r" + args[3] + "&c sur le réseau &r" + selNetwork.getName() + "&c.");
+                                    }
                                 } else {
-                                    Chat.send(player, "&cUne zone porte déjà le nom &r" + args[3] + "&c sur le réseau &r" + selNetwork.getName() + "&c.");
+                                    Chat.send(player, "&cLa zone &fall&c ne peut pas être utilisée");
                                 }
                             } else {
-                                Chat.send(player, "&cLa zone &fall&c ne peut pas être utilisée");
+                                Chat.send(player, "&cLe réseau &r" + args[2] + "&c n'existe pas.");
                             }
                         } else {
-                            Chat.send(player, "&cLe réseau &r'" + args[2] + "'&c n'existe pas.");
+                            Chat.send(player, "&cFonds insuffisants (Coût: &f" + main.getConfig().getDouble("price.create.area") + "€&c)");
                         }
 
                         return true;
                     }
 
                     if (args[1].equalsIgnoreCase("set") && args.length > 3) {
-                        boolean networkExists = Network.existsName(args[2]);
-                        Network selNetwork = Network.getNetworkFromName(args[2]);
+                        if (EconomyCustom.withdraw(player, main.getConfig().getDouble("price.create.guichet"))) {
+                            boolean networkExists = Network.existsName(args[2]);
+                            Network selNetwork = Network.getNetworkFromName(args[2]);
 
-                        if (networkExists) {
-                            assert selNetwork != null;
+                            if (networkExists) {
+                                assert selNetwork != null;
 
-                            if (!selNetwork.isOwner(player)){
-                                Chat.send(player, "&cVous n'êtes par le propriétaire de ce réseau.");
-                                return true;
-                            }
-
-                            if (selNetwork.standNameExists(args[3])) {
-                                Stand selStand = selNetwork.getStandFromName(args[3]);
-                                Sign sign = playerLookAtSign(player);
-                                if (sign != null) {
-                                    if (!Guichet.exists(sign.getLocation())) {
-                                        Guichet guichet = new Guichet();
-                                        guichet.setStand(selStand);
-                                        guichet.setNetwork(selNetwork);
-                                        guichet.setSign(sign);
-                                        selStand.addContent(guichet);
-
-                                        guichet.refresh();
-                                        String coor = sign.getX() + " " + sign.getY() + " " + sign.getZ();
-                                        Chat.send(player, "&aUn guichet &f"+guichet.getUniqueId()+"&a de la zone &f"+selStand.getName()+"&a du réseau &f"+selNetwork.getName()+"&a a été affecté aux coordonnées &f"+coor+"&a.");
-                                    } else {
-                                        Chat.send(player, "&cCe panneau a déjà été affecté à un guichet.");
-                                    }
-                                } else {
-                                    Chat.send(player, "&cVous devez regarder un panneau.");
+                                if (!selNetwork.isOwner(player) && !selNetwork.isTrusted(player.getName())) {
+                                    Chat.send(player, "&cVous n'êtes pas propriétaire ou co-propriétaire de ce réseau.");
+                                    return true;
                                 }
-                                return true;
+
+                                if (selNetwork.standNameExists(args[3])) {
+                                    Stand selStand = selNetwork.getStandFromName(args[3]);
+                                    Sign sign = playerLookAtSign(player);
+                                    if (sign != null) {
+                                        if (!Network.exists(sign.getLocation()) && !Guichet.exists(sign.getLocation())) {
+                                            Guichet guichet = new Guichet();
+                                            guichet.setStand(selStand);
+                                            guichet.setNetwork(selNetwork);
+                                            guichet.setSign(sign);
+                                            selStand.addContent(guichet);
+
+                                            guichet.refresh();
+                                            String coor = sign.getX() + " " + sign.getY() + " " + sign.getZ();
+                                            Chat.send(player, "&aUn guichet &f" + guichet.getUniqueId() + "&a de la zone &f" + selStand.getName() + "&a du réseau &f" + selNetwork.getName() + "&a a été affecté aux coordonnées &f" + coor + "&a.");
+                                        } else {
+                                            Chat.send(player, "&cCe panneau est déjà affecté.");
+                                        }
+                                    } else {
+                                        Chat.send(player, "&cVous devez regarder un panneau.");
+                                    }
+                                    return true;
+                                } else {
+                                    Chat.send(player, "&cLa zone &r" + args[3] + "&c n'existe pas.");
+                                }
                             } else {
-                                Chat.send(player, "&cLa zone &r'" + args[3] + "'&c n'existe pas.");
+                                Chat.send(player, "&cLe réseau &r" + args[2] + "&c n'existe pas.");
                             }
                         } else {
-                            Chat.send(player, "&cLe réseau &r'" + args[2] + "'&c n'existe pas.");
+                            Chat.send(player, "&cFonds insuffisants (Coût: &f" + main.getConfig().getDouble("price.create.guichet") + "€&c)");
                         }
                         return true;
                     }

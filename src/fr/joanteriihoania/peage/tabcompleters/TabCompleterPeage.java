@@ -87,6 +87,14 @@ public class TabCompleterPeage implements TabCompleter {
         }
 
         if(args[0].equals("network") && args.length > 2){
+            if(args[1].equals("set")) {
+                if (args.length == 3) {
+                    for (Network network : Network.getOwnedBy(Bukkit.getPlayer(sender.getName()))) {
+                        listToReturn.add(network.getName());
+                    }
+                }
+            }
+
             if(args[1].equals("delete")) {
                 if (args.length == 3) {
                     for (Network network : Network.getOwnedBy(Bukkit.getPlayer(sender.getName()))) {
@@ -103,8 +111,13 @@ public class TabCompleterPeage implements TabCompleter {
                 }
 
                 if (args.length == 4){
-                    for (Player playerOnline: Bukkit.getOnlinePlayers()){
-                        listToReturn.add(playerOnline.getName());
+                    if (args[1].equals("untrust")){
+                        ArrayList<String> trustedPlayers = Network.getNetworkFromName(args[2]).getTrustedPlayers();
+                        listToReturn.addAll(trustedPlayers);
+                    } else {
+                        for (Player playerOnline : Bukkit.getOnlinePlayers()) {
+                            listToReturn.add(playerOnline.getName());
+                        }
                     }
                 }
             }

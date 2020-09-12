@@ -4,3 +4,11 @@ protectGuichetFromPistonInteraction: true
 prefix: "&9&l[&r&bPéage&r&9&l]&r"
 timeOutGuichet: 15
 refreshPerSecond: 2
+maxLife: 1000
+price:
+  create:
+    network: 1000
+    server: 700
+    area: 500
+    guichet: 100
+    badge: 10

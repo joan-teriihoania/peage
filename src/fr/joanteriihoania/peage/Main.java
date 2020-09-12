@@ -2,10 +2,10 @@ package fr.joanteriihoania.peage;
 
 import fr.joanteriihoania.peage.commands.CommandPeage;
 import fr.joanteriihoania.peage.tabcompleters.TabCompleterPeage;
-import jdk.nashorn.internal.ir.annotations.Ignore;
 import net.milkbowl.vault.economy.Economy;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockState;
@@ -17,6 +17,7 @@ import org.bukkit.event.block.*;
 import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.PluginDescriptionFile;
 import org.bukkit.plugin.RegisteredServiceProvider;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -41,7 +42,10 @@ public class Main extends JavaPlugin implements Listener {
     @Override
     public void onEnable() {
         saveDefaultConfig();
-        Guichet.setMain(this);
+        Guichet.setMainInstance(this);
+        Network.setMainInstance(this);
+        EconomyCustom.setMainInstance(this);
+        Network.setMaxLife(Integer.parseInt(Objects.requireNonNull(getConfig().getString("maxLife"))));
         Signs.setPrefix(getConfig().getString("prefix"));
         Chat.setPrefix(getConfig().getString("prefix"));
         commandPeage.setNetworks(networks);
@@ -114,6 +118,10 @@ public class Main extends JavaPlugin implements Listener {
             guichet.onTick(guichetsTriggered);
         }
 
+        for(Network network: Network.getAllNetworks()){
+            network.onTick();
+        }
+
         getServer().getScheduler().runTaskLater(this, () -> Bukkit.getPluginManager().callEvent(loopEvent), (long) 20/refreshPerSecond);
     }
 
@@ -147,7 +155,7 @@ public class Main extends JavaPlugin implements Listener {
                 for(Block blockProtected: toCheck) {
                     if (blockProtected.getX() == blockDestroyed.getX() && blockProtected.getY() == blockDestroyed.getY() && blockProtected.getZ() == blockDestroyed.getZ()) {
                         if (guichet.getNetwork().getOwner() != null && guichet.getNetwork().getOwner().isOnline()) {
-                            Chat.send(Objects.requireNonNull(guichet.getNetwork().getOwner().getPlayer()), "&cTentative de destruction (piston) d'un guichet détectée aux coordonnées &f" + blockDestroyed.getX() + " " + blockDestroyed.getY() + " " + blockDestroyed.getZ());
+                            Chat.send(Objects.requireNonNull(guichet.getNetwork().getOwner().getPlayer()), "&cTentative de destruction (piston) détectée aux coordonnées &f" + blockDestroyed.getX() + " " + blockDestroyed.getY() + " " + blockDestroyed.getZ());
                         }
                         event.setCancelled(true);
                         return;
@@ -169,7 +177,7 @@ public class Main extends JavaPlugin implements Listener {
                 for(Block blockProtected: toCheck) {
                     if (blockProtected.getX() == blockDestroyed.getX() && blockProtected.getY() == blockDestroyed.getY() && blockProtected.getZ() == blockDestroyed.getZ()) {
                         if (guichet.getNetwork().getOwner() != null && guichet.getNetwork().getOwner().isOnline()) {
-                            Chat.send(Objects.requireNonNull(guichet.getNetwork().getOwner().getPlayer()), "&cTentative de destruction (piston) d'un guichet détectée aux coordonnées &f" + blockDestroyed.getX() + " " + blockDestroyed.getY() + " " + blockDestroyed.getZ());
+                            Chat.send(Objects.requireNonNull(guichet.getNetwork().getOwner().getPlayer()), "&cTentative de destruction (piston) détectée aux coordonnées &f" + blockDestroyed.getX() + " " + blockDestroyed.getY() + " " + blockDestroyed.getZ());
                         }
                         event.setCancelled(true);
                         return;
@@ -192,7 +200,7 @@ public class Main extends JavaPlugin implements Listener {
                 for(Block blockProtected: toCheck) {
                     if (blockProtected.getX() == blockDestroyed.getX() && blockProtected.getY() == blockDestroyed.getY() && blockProtected.getZ() == blockDestroyed.getZ()) {
                         if (guichet.getNetwork().getOwner() != null && guichet.getNetwork().getOwner().isOnline()) {
-                            Chat.send(Objects.requireNonNull(guichet.getNetwork().getOwner().getPlayer()), "&cTentative de destruction (explosion) d'un guichet détectée aux coordonnées &f" + blockDestroyed.getX() + " " + blockDestroyed.getY() + " " + blockDestroyed.getZ());
+                            Chat.send(Objects.requireNonNull(guichet.getNetwork().getOwner().getPlayer()), "&cTentative de destruction (explosion) détectée aux coordonnées &f" + blockDestroyed.getX() + " " + blockDestroyed.getY() + " " + blockDestroyed.getZ());
                         }
                         event.setCancelled(true);
                         return;
@@ -204,6 +212,39 @@ public class Main extends JavaPlugin implements Listener {
 
     @EventHandler
     public void onBlockBreak(BlockBreakEvent event){
+        BlockState blockState = event.getBlock().getState();
+        Player player = event.getPlayer();
+        if (blockState instanceof Sign){
+            Guichet guichet = Guichet.getGuichetFromLocation(blockState.getLocation());
+            if (guichet != null){
+                if (guichet.getNetwork().isOwner(player) || guichet.getNetwork().isTrusted(player.getName())) {
+                    guichet.delete(true);
+                    Chat.send(player, "&aGuichet &r" + guichet.getName() + "&a de &r" + guichet.getStand().getName() + "&a par &r" + guichet.getNetwork().getName() + "&a supprimé.");
+                    return;
+                } else {
+                    event.setCancelled(true);
+                    Chat.send(player, "&cVous n'êtes pas propriétaire ou co-propriétaire de ce réseau.");
+                    return;
+                }
+            }
+
+            Network network = Network.getNetworkFromLocation(blockState.getLocation());
+            if (network != null){
+                if (network.isOwner(player)){
+                    player.getInventory().addItem(new ItemStack(Material.IRON_INGOT, network.getLife()));
+                    network.setLife(0);
+                    network.setControlPannel(null);
+                    Chat.send(player, "&aLe serveur du réseau &r" + network.getName() + "&a a été supprimé.");
+                    return;
+                } else {
+                    event.setCancelled(true);
+                    network.decLife();
+                    network.refreshControlPannel();
+                    return;
+                }
+            }
+        }
+
         for(Guichet guichet: Guichet.getAllGuichets()){
             for(Block block: guichet.getProtectedBlocks()){
                 if (block != null) {
@@ -211,23 +252,7 @@ public class Main extends JavaPlugin implements Listener {
                     Location blockLocation = block.getLocation();
                     if (eventLocation.getBlockX() == blockLocation.getBlockX() && eventLocation.getBlockY() == blockLocation.getBlockY() && eventLocation.getBlockZ() == blockLocation.getBlockZ()) {
                         event.setCancelled(true);
-                    }
-                }
-            }
-        }
-
-        BlockState blockState = event.getBlock().getState();
-        Player player = event.getPlayer();
-        if (blockState instanceof Sign){
-            if (Guichet.exists(blockState.getLocation())){
-                Guichet guichet = Guichet.getGuichetFromLocation(blockState.getLocation());
-                if (guichet != null){
-                    if (guichet.getNetwork().isOwner(player)) {
-                        guichet.delete();
-                        Chat.send(player, "&aGuichet &r" + guichet.getName() + "&a de &r" + guichet.getStand().getName() + "&a par &r" + guichet.getNetwork().getName() + "&a supprimé.");
-                    } else {
-                        event.setCancelled(true);
-                        Chat.send(player, "&cVous n'êtes pas le propriétaire de ce réseau.");
+                        return;
                     }
                 }
             }
@@ -254,6 +279,10 @@ public class Main extends JavaPlugin implements Listener {
     public void onJoin(PlayerJoinEvent event){
         Chat.sendUnsentMessages(event.getPlayer());
         for (Network network: Network.getAllNetworks()){
+            if (network.isOutOfOrder()){
+                Chat.send(event.getPlayer(), "&cRéseau &f"+network.getName()+"&c hors-service.");
+            }
+
             Player owner = network.getOwner();
             if (owner != null) {
                 owner.getName();
@@ -271,11 +300,24 @@ public class Main extends JavaPlugin implements Listener {
             BlockState blockState = block.getState();
             Player player = event.getPlayer();
             if (blockState instanceof Sign && event.getAction() == Action.RIGHT_CLICK_BLOCK) {
-                if (Guichet.exists(blockState.getLocation())) {
-                    Guichet guichet = Guichet.getGuichetFromLocation(blockState.getLocation());
-                    if (guichet != null && !guichetsTriggered.containsKey(guichet)) {
-                        if (guichet.clicked(player)){
-                            guichetsTriggered.put(guichet, 0);
+                Guichet guichet = Guichet.getGuichetFromLocation(blockState.getLocation());
+                if (guichet != null && !guichetsTriggered.containsKey(guichet)) {
+                    if (guichet.clicked(player)){
+                        guichetsTriggered.put(guichet, 0);
+                    }
+                }
+
+                Network network = Network.getNetworkFromLocation(blockState.getLocation());
+                if (network != null){
+                    if (player.getInventory().getItemInMainHand().getType() == Material.IRON_INGOT){
+                        if(network.incLife()){
+                            player.getInventory().getItemInMainHand().setAmount(player.getInventory().getItemInMainHand().getAmount()-1);
+                        }
+                    }
+
+                    if (player.getInventory().getItemInMainHand().getType() == Material.IRON_BLOCK){
+                        if(network.incLife(9)){
+                            player.getInventory().getItemInMainHand().setAmount(player.getInventory().getItemInMainHand().getAmount()-1);
                         }
                     }
                 }
@@ -334,6 +376,19 @@ public class Main extends JavaPlugin implements Listener {
                     if (!networkData.equals("")) {
                         if (networkData.startsWith("OWNER:") && networkData.split(":").length > 1){
                             network.setOwner(Bukkit.getPlayer(networkData.split(":")[1]));
+                        } else if (networkData.startsWith("LIFE:") && networkData.split(":").length > 1) {
+                            network.setLife(Integer.parseInt(networkData.split(":")[1]));
+                        } else if (networkData.startsWith("CONTROLPANNEL:") && networkData.split(":").length > 1) {
+                            String[] networkCoor = networkData.split(":")[1].split("#");
+                            Location tempLoc = new Location(getServer().getWorld(networkCoor[0]), Integer.parseInt(networkCoor[1]), Integer.parseInt(networkCoor[2]), Integer.parseInt(networkCoor[3]));
+                            Block tempBlock = tempLoc.getBlock();
+                            if (tempBlock.getState() instanceof Sign) {
+                                network.setControlPannel((Sign) tempBlock.getState());
+                            }
+                        } else if (networkData.startsWith("TRUSTED:") && networkData.split(":").length > 1) {
+                            for (String trustedPlayername: networkData.split(":")[1].split(",")) {
+                                network.addTrustedPlayer(trustedPlayername);
+                            }
                         } else {
                             Stand stand = new Stand(Double.parseDouble(networkData.split(":")[2]));
                             stand.setUniqueId(networkData.split(":")[0]);
@@ -440,13 +495,24 @@ public class Main extends JavaPlugin implements Listener {
 
 
             OfflinePlayer owner = network.getOwner();
+            ArrayList<String> trustedPlayers = network.getTrustedPlayers();
             String ownerString = "";
+            String trustedPlayersString = "";
+            String controlPannelCoor = "";
             if(owner != null) {
-                ownerString = "OWNER:" + owner.getName();
+                ownerString = "\nOWNER:" + owner.getName();
+            }
+
+            if (!trustedPlayers.isEmpty()){
+                trustedPlayersString = "\nTRUSTED:" + String.join(",", trustedPlayers);
+            }
+
+            if (network.getControlPannel() != null){
+                controlPannelCoor = "\nCONTROLPANNEL:" + network.getControlPannelCoor();
             }
 
             PrintWriter printWriterNetworks =  new PrintWriter(networkFile);
-            printWriterNetworks.write(ownerString + standInNetwork);
+            printWriterNetworks.write("LIFE:" + network.getLife() + controlPannelCoor + ownerString + trustedPlayersString + standInNetwork);
             printWriterNetworks.close();
 
             allNetworks += "\n" + network.save();

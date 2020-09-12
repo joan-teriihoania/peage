@@ -33,12 +33,14 @@ public class Guichet implements Structure {
     private Stand stand;
     private Network network;
     private Block entranceCenter;
+    private Block entranceCenter2;
     private Block exitCenter;
     private Block fence1;
     private Block fence2;
     private Block fence3;
     private Block blockBehind;
     private boolean locked = false;
+    private boolean outOfOrder = false;
     private ArrayList<Entity> enteredPlayer = new ArrayList<>();
     private ArrayList<Entity> exitedPlayer = new ArrayList<>();
 
@@ -73,6 +75,7 @@ public class Guichet implements Structure {
 
     public ArrayList<Block> getProtectedBlocks(){
         ArrayList<Block> blocks = new ArrayList<>();
+        if (network.getControlPannel() != null) blocks.addAll(network.getProtectedBlocks());
         blocks.add(fence1);
         blocks.add(fence2);
         blocks.add(fence3);
@@ -84,7 +87,7 @@ public class Guichet implements Structure {
         this(autoinc + "", null);
     }
 
-    public static void setMain(Main main){
+    public static void setMainInstance(Main main){
         mainInstance = main;
     }
 
@@ -94,6 +97,26 @@ public class Guichet implements Structure {
 
     public void setNetwork(Network network) {
         this.network = network;
+    }
+
+    public boolean isOutOfOrder() {
+        return outOfOrder;
+    }
+
+    public void setOutOfOrder(boolean outOfOrder) {
+        this.outOfOrder = outOfOrder;
+
+        if (outOfOrder) {
+            close();
+            if (sign == null) return;
+            Signs.set(sign, new String[]{
+                    "",
+                    "&cPéage",
+                    "&chors-service"
+            });
+        } else {
+            refresh();
+        }
     }
 
     public Stand getStand() {
@@ -125,7 +148,7 @@ public class Guichet implements Structure {
         updateZones();
 
         if (sign != null) {
-            String price = "&9&l[&r&bPrix: &r" + stand.getPrice() + "&b€&r&9&l]";
+            String price = "&9&l[&r&bPrix: &f" + stand.getPrice() + "&b€&r&9&l]";
             if(stand.getPrice() == 0) price = "&aGratuit";
 
             Signs.set(sign, new String[]{
@@ -149,7 +172,7 @@ public class Guichet implements Structure {
                     ItemMeta itemMeta = player.getInventory().getItemInMainHand().getItemMeta();
                     if (itemMeta != null) {
                         BadgeParser badgeParser = new BadgeParser().fromTag(itemMeta.getLocalizedName());
-                        if (badgeParser.canOpen(this) && !mainInstance.isGuichetTriggered(this) && !locked && badgeParser.useBadge(player, this)) {
+                        if (badgeParser.canOpen(this) && !mainInstance.isGuichetTriggered(this) && !locked && !outOfOrder && badgeParser.useBadge(player, this)) {
                             Chat.send(player, network.getName() + " vous souhaite bonne route !");
                             mainInstance.addGuichetTriggered(this);
                             open();
@@ -227,7 +250,7 @@ public class Guichet implements Structure {
 
     public boolean clicked(Player player, double price){
         if (price == 0) return false;
-        if(locked) return false;
+        if(locked || outOfOrder) return false;
         double balance = mainInstance.economy.getBalance(player);
         if (balance - price >= 0) {
             Player owner = network.getOwner();
@@ -237,10 +260,10 @@ public class Guichet implements Structure {
                 mainInstance.economy.depositPlayer(recipient, price);
 
                 if (!player.getName().equals(owner.getName())) {
-                    Chat.send(player, "Vous avez payé &a" + price + "&r€ à &a" + stand.getName() + "&r de &a" + network.getName() + "&r.");
-                    Chat.send(owner.getPlayer(), player.getDisplayName() + " a payé &a" + price + "&r€ à &a" + stand.getName() + "&r de &a" + network.getName() + "&r.");
+                    Chat.send(player, "Vous avez payé &a" + price + "&r€ à &a" + network.getName() + "&r sur &a" + stand.getName() + "&r.");
+                    Chat.send(owner.getPlayer(), player.getDisplayName() + " a payé &a" + price + "&r€ à &a" + network.getName() + "&r sur &a" + stand.getName() + "&r.");
                 } else {
-                    Chat.send(player, "Vous vous êtes payé &a" + price + "&r€ &a" + stand.getName() + "&r de &a" + network.getName() + "&r.");
+                    Chat.send(player, "Vous vous êtes payé &a" + price + "&r€ sur &a" + stand.getName() + "&r (&a" + network.getName() + "&r).");
                 }
 
                 open();
@@ -270,8 +293,12 @@ public class Guichet implements Structure {
     }
 
     public void open(){
+        open(false);
+    }
+
+    public void open(boolean force){
         if (sign == null) return;
-        if(locked) return;
+        if((locked || outOfOrder) && !force) return;
         updateZones();
         fence1.setType(Material.AIR);
         fence2.setType(Material.AIR);
@@ -280,33 +307,33 @@ public class Guichet implements Structure {
 
     public void close(){
         if (sign == null) return;
-        if(locked) return;
+        if(locked || outOfOrder) return;
         updateZones();
         fence1.setType(Material.WHITE_CONCRETE);
         fence2.setType(Material.RED_CONCRETE);
         fence3.setType(Material.WHITE_CONCRETE);
     }
 
-    public void delete(){
+    public void delete(boolean removeFromStand){
         mainInstance.removeGuichetTriggered(this);
         unlock();
-        open();
+        open(true);
         Signs.set(sign, new String[]{
                 "",
                 "&cPéage supprimé",
                 ""
         });
-        this.remove();
+        this.remove(removeFromStand);
     }
 
 
-    public void remove(){
+    public void remove(boolean removeFromStand){
         allGuichets.remove(this);
-        stand.removeContent(this);
+        if(removeFromStand) stand.removeContent(this);
     }
 
     public void PlayerEnterEvent(Player player){
-        if (!mainInstance.isGuichetTriggered(this) && !locked) {
+        if (!mainInstance.isGuichetTriggered(this) && !locked && !outOfOrder) {
             ItemMeta itemMeta = player.getInventory().getItemInMainHand().getItemMeta();
             if(itemMeta != null){
                 BadgeParser badgeParser = new BadgeParser().fromTag(itemMeta.getLocalizedName());
@@ -321,7 +348,7 @@ public class Guichet implements Structure {
             if (stand.getPrice() > 0 && mainInstance.getConfig().getBoolean("displayMessageWhenArriveAtGuichet")) {
                 TextComponent message = new TextComponent(ChatColor.translateAlternateColorCodes('&', "&9&l[&r&bPéage&r&9&l]&r &9&l<&bCliquer pour payer &f" + stand.getPrice() + "&b€ et ouvrir le péage&9&l>"));
                 message.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/peage pay " + getUniqueId()));
-                message.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new ComponentBuilder("En cliquant ici, vous acceptez que le réseau " + network.getName() + " prélève la somme de " + stand.getPrice() + "€ de votre compte bancaire dans les limites acceptées par votre solde. Un solde insuffisant invalidera cette transaction.").create()));
+                message.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new ComponentBuilder("En cliquant ici, vous acceptez que le réseau " + network.getName() + " prélève la somme de " + stand.getPrice() + "€ (valeur non-contractuelle précisée à l'achat sur le guichet utilisé) de votre compte bancaire dans les limites acceptées par votre solde. Un solde insuffisant invalidera cette transaction.").create()));
                 Chat.send(player, "&bVous arrivez au guichet &f" + getUniqueId() + "&b de &f" + stand.getName() + "&b de &f" + network.getName());
                 player.spigot().sendMessage(message);
             }
@@ -334,14 +361,18 @@ public class Guichet implements Structure {
         }
     }
 
+    public void outOfService(){
+
+    }
+
     public void lock(){
         locked = true;
         close();
         if(sign == null) return;
         Signs.set(sign, new String[]{
                 "",
-                "&bPatientez svp",
-                ""
+                "&bPéage",
+                "&bverrouillé"
         });
     }
 
@@ -352,17 +383,8 @@ public class Guichet implements Structure {
 
     public boolean isInEntrance(Player player){
         Location playerLoc = player.getLocation();
-        if (playerLoc.distance(entranceCenter.getLocation()) <= 1){
-            return true;
-        }
-        return false;
-    }
-
-    public boolean isInExit(Player player){
-        Location playerLoc = player.getLocation();
-        if (playerLoc.distance(exitCenter.getLocation()) <= 1){
-            return true;
-        }
+        if (playerLoc.distance(entranceCenter.getLocation()) <= 2) return true;
+        if (playerLoc.distance(entranceCenter2.getLocation()) <= 2) return true;
         return false;
     }
 
@@ -391,6 +413,8 @@ public class Guichet implements Structure {
             }
 
             if (leftFacing != null) {
+                entranceCenter2 = entranceCenter.getRelative(leftFacing.getOppositeFace());
+
                 exitCenter = entranceCenter.getRelative(leftFacing);
                 exitCenter = exitCenter.getRelative(leftFacing);
                 exitCenter = exitCenter.getRelative(leftFacing);
@@ -506,6 +530,5 @@ public class Guichet implements Structure {
             Console.output("WARN: Saving string build failed (no sign defined)");
             return "";
         }
-
     }
 }
